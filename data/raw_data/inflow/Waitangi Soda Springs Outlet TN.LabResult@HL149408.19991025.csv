@@ -1,0 +1,63 @@
+# TN.LabResult@HL149408.19991025.csv generated at 2023-10-25 14:32:01 (UTC+13:00) by AQUARIUS Time-Series 23.2.146.0,,,,,
+# ,,,,,
+# Time-series identifier: TN.LabResult@HL149408,,,,,
+# Location: Outlet at Waitangi Soda Springs,,,,,
+# UTC offset: (UTC+12:00),,,,,
+# Value units: g/m^3,,,,,
+# Value parameter: TN,,,,,
+# Interpolation type: Discrete Values,,,,,
+# Time-series type: Reflected,,,,,
+# ,,,,,
+# Export options: Corrected signal from 1999-10-25T02:31:59.263Z to 2023-10-25T02:31:59.263Z,,,,,
+# ,,,,,
+# CSV data starts at line 15.,,,,,
+# ,,,,,
+ISO 8601 UTC,Timestamp (UTC+12:00),Value,Approval Level,Grade,Qualifiers
+2008-03-18T23:00:00Z,19/03/2008 11:00,0.52399999,Validated,200,Labstar - Legacy Data
+2009-12-03T01:10:00Z,3/12/2009 13:10,0.50599998,Validated,200,Labstar - Legacy Data
+2010-02-10T01:10:00Z,10/02/2010 13:10,0.49599999,Validated,200,Labstar - Legacy Data
+2010-04-20T02:15:00Z,20/04/2010 14:15,0.48800001,Validated,200,Labstar - Legacy Data
+2010-06-09T02:30:00Z,9/06/2010 14:30,0.505,Validated,200,Labstar - Legacy Data
+2010-08-04T02:00:00Z,4/08/2010 14:00,0.5,Validated,200,Labstar - Legacy Data
+2010-10-18T01:25:00Z,18/10/2010 13:25,0.38999999,Validated,200,Labstar - Legacy Data
+2010-12-13T00:00:00Z,13/12/2010 12:00,0.56999999,Validated,200,Labstar - Legacy Data
+2011-02-03T01:20:00Z,3/02/2011 13:20,0.53500003,Validated,200,Labstar - Legacy Data
+2011-04-14T03:00:00Z,14/04/2011 15:00,0.56099999,Validated,200,Labstar - Legacy Data
+2011-05-30T03:30:00Z,30/05/2011 15:30,0.67400002,Validated,200,Labstar - Legacy Data
+2011-08-02T03:20:00Z,2/08/2011 15:20,0.72000003,Validated,200,Labstar - Legacy Data
+2011-10-03T22:25:00Z,4/10/2011 10:25,0.64200002,Validated,200,Labstar - Legacy Data
+2011-12-07T21:28:00Z,8/12/2011 9:28,0.54900002,Validated,200,Labstar - Legacy Data
+2012-02-14T20:30:00Z,15/02/2012 8:30,0.465,Validated,200,Labstar - Legacy Data
+2012-04-11T23:22:00Z,12/04/2012 11:22,0.57499999,Validated,200,Labstar - Legacy Data
+2012-06-11T22:32:00Z,12/06/2012 10:32,0.71200001,Validated,200,Labstar - Legacy Data
+2019-08-19T22:45:00Z,20/08/2019 10:45,0.454,Validated,200,Routine
+2019-09-23T22:35:00Z,24/09/2019 10:35,0.429,Validated,200,Routine
+2019-10-15T21:35:00Z,16/10/2019 9:35,0.416,Validated,200,Routine
+2019-11-18T21:30:00Z,19/11/2019 9:30,0.401,Validated,200,Routine
+2019-12-04T21:45:00Z,5/12/2019 9:45,0.377,Validated,200,Routine
+2020-01-21T21:35:00Z,22/01/2020 9:35,0.38,Validated,200,Routine
+2020-02-12T21:45:00Z,13/02/2020 9:45,0.4185,Validated,200,Routine
+2020-05-17T12:00:00Z,18/05/2020 0:00,0.4267,Validated,200,Routine
+2020-06-14T22:35:00Z,15/06/2020 10:35,0.428,Validated,200,Routine
+2020-07-28T22:20:00Z,29/07/2020 10:20,0.4536,Validated,200,Routine
+2020-08-24T22:20:00Z,25/08/2020 10:20,0.4786,Validated,200,Routine
+2020-09-20T22:10:00Z,21/09/2020 10:10,0.3847,Validated,200,Routine
+2020-10-26T21:15:00Z,27/10/2020 9:15,0.423,Validated,200,Routine
+2020-11-24T20:55:00Z,25/11/2020 8:55,0.393,Validated,200,Routine
+2020-12-13T20:54:00Z,14/12/2020 8:54,0.363,Validated,200,Routine
+2021-01-27T21:05:00Z,28/01/2021 9:05,0.387,Validated,400,Routine
+2021-02-14T21:10:00Z,15/02/2021 9:10,0.391,Validated,400,Routine
+2021-03-16T12:00:00Z,17/03/2021 0:00,0.417,Validated,400,Routine
+2021-04-19T21:39:00Z,20/04/2021 9:39,0.3959,Validated,400,Routine
+2021-05-16T22:11:00Z,17/05/2021 10:11,0.4033,Validated,400,Routine
+2021-06-14T22:05:00Z,15/06/2021 10:05,0.4173,Validated,400,Routine
+2021-07-12T21:50:00Z,13/07/2021 9:50,0.4705,Validated,400,Routine
+2021-08-03T21:55:00Z,4/08/2021 9:55,0.4988,Validated,600,Routine
+2021-11-10T00:15:00Z,10/11/2021 12:15,0.3904,Validated,600,Routine
+2022-01-31T22:45:00Z,1/02/2022 10:45,0.3746,Validated,600,Routine
+2022-05-16T00:05:00Z,16/05/2022 12:05,0.5329,Validated,400,Routine
+2022-08-03T01:30:00Z,3/08/2022 13:30,0.5539,Validated,600,Routine
+2022-11-08T23:02:00Z,9/11/2022 11:02,0.4406,Validated,400,Routine
+2023-02-19T22:30:00Z,20/02/2023 10:30,0.5722,Validated,600,Routine
+2023-05-21T22:00:00Z,22/05/2023 10:00,0.6876,Validated,600,Routine
+2023-08-02T21:30:00Z,3/08/2023 9:30,0.5741,Validated,600,Routine
