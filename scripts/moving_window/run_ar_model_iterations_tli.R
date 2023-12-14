@@ -51,22 +51,6 @@ ggplot(aes(x = as.Date(date), y = tli_annual)) +
   xlab('Date') +
   ylab('Annual TLI')
 
-#######################################################
-# run the ar model simulation
-source('./scripts/R/run_ar.R')
-
-dat <- dat %>% 
-  mutate(diff_DRP = top_DRP_ugL - bottom_DRP_ugL,
-         diff_NH4 = top_NH4_ugL - bottom_NH4_ugL,
-         diff_NO3 = top_NO3_ugL - bottom_NO3_ugL) 
-dat %>% 
-  pivot_longer(diff_DRP:diff_NO3, names_to = 'variable', values_to = 'value') %>% 
-  ggplot(aes(x = as.Date(date), y = value, color = variable)) +
-  geom_line() +
-  facet_wrap(~variable, scales = 'free_y') +
-  theme_bw() +
-  xlab('Date') +
-  ylab('Top - Bottom Concentration (ug/L)')
 
 # plot all land use vars to see which have changed
 dat %>% 
@@ -81,18 +65,15 @@ dat %>%
   ylab('Percent of Catchment') +
   theme_bw()
 
-
-
-# positive means higher nutrients in surface
-
-################################################################################################
-## run the models
+#######################################################
+# run the ar model simulation
+source('./scripts/R/run_ar.R')
 
 # select variables to test
-test_vars <- c(#"chla_ugL_INT", "top_TN_ugL", "top_TP_ugL", "secchi_m", "TN_TP",
-               "air_temp_mean", "windspeed_max", "rain_mean","avg_level_m", "temp_C_8", "thermo_depth", 
-               "L_alum_day",  "area_pct_exotic_forest",
-               "DO_sat_8", "bottom_DRP_ugL", "diff_DRP", "bottom_NH4_ugL", "diff_NH4",  "bottom_NO3_ugL", "diff_NO3")
+test_vars <- c("air_temp_mean", "windspeed_max", "rain_mean","avg_level_m", 
+               "temp_C_8", "thermo_depth", "L_alum_day",  "area_pct_exotic_forest",
+               "DO_sat_8", "bottom_DRP_ugL", "diff_DRP", "bottom_NH4_ugL", 
+               "diff_NH4",  "bottom_NO3_ugL", "diff_NO3", "none")
 id_var <- "tli_monthly"
 window_length <- 100
 n_iter <- seq(1, nrow(dat) - window_length)
@@ -100,9 +81,16 @@ n_iter <- seq(1, nrow(dat) - window_length)
 out <- data.frame()
 
 for(i in 1:length(test_vars)){
-  dat_ar <- dat %>% 
-    ungroup() %>% 
-    select(date, id_var, test_vars[i])
+  if(test_vars[i]=='none'){
+    dat_ar <- dat %>% 
+      ungroup() %>% 
+      select(date, id_var)  
+  }else{
+    dat_ar <- dat %>% 
+      ungroup() %>% 
+      select(date, id_var, test_vars[i])  
+  }
+  
 
   for(j in 1:length(n_iter)){
     
@@ -163,6 +151,13 @@ out %>%
 
 out %>% 
   filter(id_covar=='avg_level_m') %>% 
+  ggplot(aes(x = as.Date(start_date), y = value, color = covar)) +
+  geom_point() +
+  facet_wrap(~covar, scales = 'free_y') +
+  theme_bw()
+
+out %>% 
+  filter(id_covar=='none') %>% 
   ggplot(aes(x = as.Date(start_date), y = value, color = covar)) +
   geom_point() +
   facet_wrap(~covar, scales = 'free_y') +
@@ -256,10 +251,15 @@ ggsave('./figures/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400
 out_all_ts <- data.frame()
 
 for(i in 1:length(test_vars)){
-  dat_ar <- dat %>% 
-    ungroup() %>% 
-    select(date, id_var, test_vars[i])
-
+  if(test_vars[i]=='none'){
+    dat_ar <- dat %>% 
+      ungroup() %>% 
+      select(date, id_var)  
+  }else{
+    dat_ar <- dat %>% 
+      ungroup() %>% 
+      select(date, id_var, test_vars[i])  
+  }
     # run the model
     d <- run_ar(data = dat_ar, id_var = id_var, id_covar = test_vars[i])
     d$iter_start <- start

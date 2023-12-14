@@ -1,6 +1,8 @@
 # driver analysis for 90's data at Rotoehu
 library(tidyverse)
 library(lubridate)
+library(ggpubr)
+library(readxl)
 
 # tli
 tli <- read.csv('./data/processed_data/90s_data/tli_rotoehu.csv')
