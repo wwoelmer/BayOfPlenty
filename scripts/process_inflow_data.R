@@ -5,10 +5,10 @@ dir <- './data/raw_data/inflow'
 fils <- list.files(dir)
 
 # some metadata about units are in the first few columns
-head_inf <- read.csv(file.path(dir, fils[2]))
+head_inf <- read.csv(file.path(dir, fils[3]))
 
 # read in starting with data
-inf <- read.csv(file.path(dir, fils[2]), skip = 14)
+inf <- read.csv(file.path(dir, fils[3]), skip = 14)
 colnames(inf) <- c('date', 'date_utc', 'discharge_m3s', 'approval', 'grade', 'qualifiers')
 inf <- inf %>% select(date, discharge_m3s)
 
@@ -20,9 +20,9 @@ write.csv(inf, paste0('./data/processed_data/discharge_', year(min(inf$date)), '
 ###############################################################
 # go through the nutrient data and combine
 # some metadata about units are in the first few columns
-head_drp <- read.csv(file.path(dir, fils[3]))
+head_drp <- read.csv(file.path(dir, fils[4]))
 
-dat <- read.csv(file.path(dir, fils[3]), skip = 14)
+dat <- read.csv(file.path(dir, fils[4]), skip = 14)
 colnames(dat) <- c('date', 'date_utc', 'DRP_gm3', 'approval', 'grade', 'qualifiers')
 dat <- dat %>% select(date, DRP_gm3)
 
