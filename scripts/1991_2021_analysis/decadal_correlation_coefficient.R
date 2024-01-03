@@ -77,6 +77,12 @@ vars_out <- vars_out %>%
   filter(variable!='tli_monthly')
 vars_out$decade <- factor(vars_out$decade, levels = c('90', '2000', '2010', 'all'))
 
+# remove min and max variables since they are similar to mean
+`%notin%` <- Negate(`%in%`)
+vars_remove <- c('air_temp_max', 'air_temp_min', 'longwave_max', 'longwave_min')
+vars_out <- vars_out %>% 
+  filter(variable %notin% vars_remove)
+
 
 library(RColorBrewer)
 col_pal <- colorRampPalette(brewer.pal(9, "Paired"))(13)
@@ -85,16 +91,35 @@ p1 <- vars_out %>%
   filter(value > 0.3 | value < -0.3) %>% 
   ggplot(aes(x = decade, y = value, fill = variable)) +
   geom_col(position = 'dodge') +
-  scale_fill_manual(values = col_pal) +
+  scale_fill_brewer(palette = 'Spectral') +
+#  scale_fill_manual(values = col_pal) +
   geom_vline(xintercept = 1.5) +
   geom_vline(xintercept = 2.5) +
   geom_vline(xintercept = 3.5) +
   theme_bw() +
   ylab('Correlation Coefficient') 
 p1
-ggsave('./figures/r_by_decade.png', p1, dpi = 300, units = 'mm', height = 300, width = 500, scale = 0.5)
+ggsave('./figures/r_by_decade.png', p1, dpi = 300, units = 'mm', height = 200, width = 500, scale = 0.4)
 
 ################################################################################
+vars_sig <- vars_out %>% 
+  filter(value > 0.3 | value < -0.3) 
+vars_plot <- unique(vars_sig$variable)
+
+
+
+p2 <- df_long %>% 
+  filter(variable %in% vars_plot) %>% 
+ggplot(aes(x = as.factor(decade), y = value, fill = as.factor(decade))) +
+  geom_boxplot() +
+  facet_wrap(~variable, scales = 'free') +
+  theme_bw() +
+  xlab('Decade') +
+  labs(fill = 'Decade')
+ggsave('./figures/selected_vars_decade_boxplots.png', p2, dpi = 300, units = 'mm', 
+       height = 300, width = 500, scale = 0.4)
+
+
 ggplot(df, aes(x = as.Date(date), y = longwave_mean, color = as.factor(decade))) +
   geom_point() +
   geom_line() +
