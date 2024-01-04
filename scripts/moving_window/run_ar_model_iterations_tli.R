@@ -72,8 +72,8 @@ source('./scripts/R/run_ar.R')
 # select variables to test
 test_vars <- c("air_temp_mean", "windspeed_max", "rain_mean","avg_level_m", 
                "temp_C_8", "thermo_depth", "L_alum_day",  "area_pct_exotic_forest",
-               "DO_sat_8", "bottom_DRP_ugL", "diff_DRP", "bottom_NH4_ugL", 
-               "diff_NH4",  "bottom_NO3_ugL", "diff_NO3", "none")
+               "DO_sat_8", "bottom_DRP_ugL", "bottom_NH4_ugL", 
+                "bottom_NO3_ugL", "none")
 id_var <- "tli_monthly"
 window_length <- 100
 n_iter <- seq(1, nrow(dat) - window_length)
@@ -100,7 +100,10 @@ for(i in 1:length(test_vars)){
     dat_sub <- dat_ar[start:end,]
     
     # run the model
-    d <- run_ar(data = dat_sub, id_var = id_var, id_covar = test_vars[i], window_length = window_length)
+    d <- run_ar(data = dat_sub, 
+                id_var = id_var, 
+                id_covar = test_vars[i], 
+                window_length = window_length)
     d$iter_start <- start
     d$iter_end <- end
     d$start_date <- min(dat_sub$date)
@@ -110,6 +113,8 @@ for(i in 1:length(test_vars)){
     
   }
 }
+
+
 
 ## define color palettes for the right number of variables
 col_no <- length(unique(out$id_covar))
@@ -121,7 +126,19 @@ ggplotly(ggplot(out, aes(x = iter_start, y = r2, color = id_covar)) +
   geom_point() +
   scale_color_manual(values = col_pal) +
   geom_line() +
-  theme_bw()) 
+  theme_bw())
+
+
+ggplotly(ggplot(out, aes(x = iter_start, y = aic, color = id_covar)) +
+           geom_point() +
+           scale_color_manual(values = col_pal) +
+           geom_line() +
+           theme_bw())
+
+ggplotly(ggplot(out, aes(x = aic, y = r2, color = id_covar)) +
+  geom_point() +
+    geom_smooth(method = 'lm') +
+  theme_bw())
 
 r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   geom_line() +
@@ -177,13 +194,22 @@ out_prop <- out %>%
   distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
   select(id_covar:iter_end, start_date, end_date, r2) %>% 
   group_by(iter_start) %>% 
-  mutate(diff_from_best = max(r2) - r2,
-         rank = dense_rank(desc(r2)))
+  mutate(diff_from_best_r2 = max(r2) - r2,
+         rank_r2 = dense_rank(desc(r2)),
+         diff_from_best_aic = min(aic) - aic,
+         rank_aic = dense_rank(desc(aic)))
 
-ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best, color = id_covar)) +
+ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best_r2, color = id_covar)) +
   geom_point() +
   scale_color_manual(values = col_pal) +
   theme_bw())
+
+ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best_aic, color = id_covar)) +
+           geom_point() +
+           scale_color_manual(values = col_pal) +
+           theme_bw())
+#### area exotic forest doesn't follow expectations for r2 and aic
+## this article might be helpful: https://stats.stackexchange.com/questions/140965/when-aic-and-adjusted-r2-lead-to-different-conclusions
 
 ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
   geom_point() +
