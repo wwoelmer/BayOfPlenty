@@ -128,14 +128,21 @@ p2
 ggsave('./figures/selected_vars_decade_boxplots.png', p2, dpi = 300, units = 'mm', 
        height = 300, width = 500, scale = 0.4)
 
-
-ggplot(df, aes(x = as.Date(date), y = longwave_mean, color = as.factor(decade))) +
-  geom_point() +
-  geom_line() +
-  theme_bw()
-
 df_summary <- df_long %>% 
   select(variable, value, decade) %>% 
   group_by(variable, decade) %>% 
-  reframe(mean = round(mean(value, na.rm = TRUE), 2), min = min(value, na.rm = TRUE), max= max(value, na.rm = TRUE), range = min - max)
+  reframe(mean = round(mean(value, na.rm = TRUE), 2), min = min(value, na.rm = TRUE), 
+          max= max(value, na.rm = TRUE), range = min - max, n = n())
 
+# what months were sampled in 90's
+ggplot(df_long, aes(y = month)) +
+  geom_histogram() +
+  facet_wrap(~decade) +
+  theme_bw() 
+
+df_long %>% 
+  filter(variable=='windspeed_min') %>% 
+ggplot(aes(x = month, y = value)) +
+  geom_bar(stat = 'sum') +
+  facet_wrap(~decade) +
+  theme_bw() 
