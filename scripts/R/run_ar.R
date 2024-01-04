@@ -51,18 +51,17 @@ run_ar <- function(data, id_var, id_covar, window_length = 99, lag_id = TRUE){
   summ <- summary(m1)
   r2 <- summ$adj.r.squared
   covars <- summ$coefficients
+  aic <- AICc(m1)
   
   # rearrange and write outputs to file
   covars <- as.data.frame(covars)
   covars <- rownames_to_column(covars, var = 'covar')
   colnames(covars) <- c('covar', 'value', 'std_error', 't_value', 'p_value')
   
-  covars$r2 <- NA
-  covars$r2 <- rep(r2, nrow(covars))
-  
   covars$id_covar <- id_covar
-  
   covars$covar <- gsub("[()]", "", covars$covar)
+  covars$aic <- aic
+  covars$r2 <- r2
   
   # some visual diagnostics
 #  pred_train <- predict(m1, newdata = newdf)
