@@ -159,13 +159,18 @@ for(i in 1:nrow(df_90_adj)){
 
 df_90_adj <- na.omit(df_90_adj)
 
-ggplot(df_90_adj, aes(x = hydroyear, y = tli_annual)) +
+p1 <- ggplot(df_90_adj, aes(x = hydroyear, y = tli_annual)) +
   geom_point() +
   geom_ribbon(aes(ymin = tli_annual_lower, ymax = tli_annual_upper, alpha = 0.5)) +
   theme_bw() +
   scale_x_continuous(breaks = c(unique(df_90_adj$hydroyear))) +
   theme(legend.position = 'NONE') +
-  geom_hline(aes(yintercept = 3.9)) 
+  geom_hline(aes(yintercept = 3.9)) +
+  ylab('Annual TLI')+
+  xlab('Hydroyear')
+
+ggsave('./figures/uncertainty_90s_tli.png', p1, dpi = 300, units = 'mm', 
+       height = 200, width = 400, scale = 0.5)
 
 
 ##########################################################################
