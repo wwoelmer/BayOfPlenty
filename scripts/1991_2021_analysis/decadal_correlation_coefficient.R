@@ -1,8 +1,12 @@
 # calculate correlation coefficients by decade
+#install.packages('Hmisc')
+#install.packages('ggthemes')
 
 library(tidyverse)
-#install.packages('Hmisc')
 library(Hmisc)
+library(ggthemes)
+library(RColorBrewer)
+library(ggpomological)
 
 df <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv')
 
@@ -18,10 +22,6 @@ ggplot(df_long, aes(x = as.factor(decade), y = value, fill = as.factor(decade)))
   xlab('Decade') +
   labs(fill = 'Decade')
 
-df_summary <- df_long %>% 
-  select(variable, value, decade) %>% 
-  group_by(variable, decade) %>% 
-  reframe(mean = round(mean(value, na.rm = TRUE), 2), min = min(value, na.rm = TRUE), max= max(value, na.rm = TRUE), range = min - max)
 
 #################################################################################
 # plot correlations
@@ -84,15 +84,24 @@ vars_out <- vars_out %>%
   filter(variable %notin% vars_remove)
 
 
-library(RColorBrewer)
 col_pal <- colorRampPalette(brewer.pal(9, "Paired"))(13)
 
-p1 <- vars_out %>% 
-  filter(value > 0.3 | value < -0.3) %>% 
-  ggplot(aes(x = decade, y = value, fill = variable)) +
+
+vars_select <- vars_out %>% 
+  filter(value > 0.3 | value < -0.3)  
+vars_select$variable <- factor(vars_select$variable, 
+                               levels = c("air_temp_mean", "longwave_mean", "windspeed_min", 
+                                          "avg_level_m", "monthly_avg_level_m", "DRP_mgm3", "NH4_mgm3", 
+                                          "temp_8", "de_trended_temp_anomaly"),
+                               labels = c("mean air temperature", "mean longwave", "min windspeed", 
+                                          "water level", "average water level", "bottom DRP", "bottom NH4", 
+                                          "bottom temperature", "temperature anomaly"))
+
+p1 <- ggplot(vars_select, aes(x = decade, y = value, fill = variable)) +
   geom_col(position = 'dodge') +
-  scale_fill_brewer(palette = 'Spectral') +
-#  scale_fill_manual(values = col_pal) +
+  scale_fill_calc() +
+  #scale_fill_brewer(palette = 'Spectral') +
+ # scale_fill_manual(values = col_pal) +
   geom_vline(xintercept = 1.5) +
   geom_vline(xintercept = 2.5) +
   geom_vline(xintercept = 3.5) +
@@ -106,16 +115,16 @@ vars_sig <- vars_out %>%
   filter(value > 0.3 | value < -0.3) 
 vars_plot <- unique(vars_sig$variable)
 
-
-
 p2 <- df_long %>% 
   filter(variable %in% vars_plot) %>% 
 ggplot(aes(x = as.factor(decade), y = value, fill = as.factor(decade))) +
   geom_boxplot() +
+  scale_fill_pomological() +
   facet_wrap(~variable, scales = 'free') +
   theme_bw() +
   xlab('Decade') +
   labs(fill = 'Decade')
+p2
 ggsave('./figures/selected_vars_decade_boxplots.png', p2, dpi = 300, units = 'mm', 
        height = 300, width = 500, scale = 0.4)
 
@@ -124,3 +133,9 @@ ggplot(df, aes(x = as.Date(date), y = longwave_mean, color = as.factor(decade)))
   geom_point() +
   geom_line() +
   theme_bw()
+
+df_summary <- df_long %>% 
+  select(variable, value, decade) %>% 
+  group_by(variable, decade) %>% 
+  reframe(mean = round(mean(value, na.rm = TRUE), 2), min = min(value, na.rm = TRUE), max= max(value, na.rm = TRUE), range = min - max)
+
