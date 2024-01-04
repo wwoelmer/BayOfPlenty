@@ -1,6 +1,7 @@
 # calculate difference between surface and bottom nutrients back to 1991
 library(tidyverse)
 library(readxl)
+library(lubridate)
 
 #################################################################################
 # bottom nutrients from Lake_Rotoehu
@@ -65,6 +66,33 @@ nuts_all %>%
   ylab('Top - Bottom Concentration (ug/L)') +
   geom_vline(aes(xintercept = as.Date('2000-01-01')))
 
+###############################################################################
+# plot over day of year
 
+nuts_all <- nuts_all %>% 
+  mutate(doy = yday(date),
+         year = year(date))
 
+getDecade <- function(year) {
+  year <- ifelse(year<2000, year-1900, year)
+  decade <- floor(year/10) * 10
+  return (decade)
+}
+
+nuts_all$decade <- getDecade(nuts_all$year)
+
+nuts_all %>% 
+  pivot_longer(diff_DRP:diff_NH4, names_to = 'variable', values_to = 'value') %>% 
+  ggplot(aes(x = doy, y = value, color = as.factor(year))) +
+  geom_line() +
+  facet_wrap(~variable, scales = 'free_y') +
+  theme_bw() 
+  
+
+nuts_all %>% 
+  pivot_longer(diff_DRP:diff_NH4, names_to = 'variable', values_to = 'value') %>% 
+  ggplot(aes(x = doy, y = value, color = as.factor(year))) +
+  geom_line() +
+  facet_wrap(decade~variable, scales = 'free_y') +
+  theme_bw() 
 
