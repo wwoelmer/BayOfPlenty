@@ -112,9 +112,15 @@ lvl <- lvl %>% select(-end)
 lvl$date <- as.POSIXct(lvl$date)
 lvl <- yr_to_hydro_yr(lvl)
 lvl$month <- month(lvl$date)
-lvl <- lvl %>% select(-date)
+#lvl <- lvl %>% select(-date)
 
-df <- left_join(df, lvl, by = c('hydroyear', 'hydroyear_label', 'month'))
+lvl <- lvl %>% 
+  group_by(month) %>% 
+  mutate(monthly_avg_level_m = mean(avg_level_m, na.rm = TRUE))
+df$date <- as.Date(df$date)
+lvl$date <- as.Date(lvl$date)
+
+df <- left_join(df, lvl, by = c('date', 'hydroyear', 'hydroyear_label', 'month'))
 
 # land cover (only starts in 1996)?
 
