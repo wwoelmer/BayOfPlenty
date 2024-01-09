@@ -22,6 +22,11 @@ ggplot(df_long, aes(x = as.factor(decade), y = value, fill = as.factor(decade)))
   xlab('Decade') +
   labs(fill = 'Decade')
 
+# remove vars with no clear mechanism on lake TLI
+df <- df %>% 
+  select(-c(air_pressure_min, air_pressure_mean, air_pressure_max,
+            longwave_min, longwave_mean, longwave_max,
+            shortwave_min, shortwave_mean, shortwave_max))
 
 #################################################################################
 # plot correlations
@@ -90,11 +95,13 @@ col_pal <- colorRampPalette(brewer.pal(9, "Paired"))(13)
 vars_select <- vars_out %>% 
   filter(value > 0.3 | value < -0.3)  
 vars_select$variable <- factor(vars_select$variable, 
-                               levels = c("air_temp_mean", "longwave_mean", "windspeed_min", 
-                                          "avg_level_m", "monthly_avg_level_m", "DRP_mgm3", "NH4_mgm3", 
+                               levels = c("air_temp_mean", "windspeed_min", 
+                                          "avg_level_m", "monthly_avg_level_m", 
+                                          "DRP_mgm3", "NH4_mgm3", 
                                           "temp_8", "de_trended_temp_anomaly"),
-                               labels = c("mean air temperature", "mean longwave", "min windspeed", 
-                                          "water level", "average water level", "bottom DRP", "bottom NH4", 
+                               labels = c("mean air temperature", "min windspeed", 
+                                          "water level", "average water level", 
+                                          "bottom DRP", "bottom NH4", 
                                           "bottom temperature", "temperature anomaly"))
 
 p1 <- ggplot(vars_select, aes(x = decade, y = value, fill = variable)) +
