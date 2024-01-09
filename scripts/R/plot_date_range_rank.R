@@ -7,7 +7,7 @@
 plot_date_range_rank <- function(variable, rank_plot, df_rank, df_driver, ylab, title = TRUE, shading = TRUE){
   
   rank_dates <- df_rank %>% filter(id_covar==variable,
-                                   rank==rank_plot)
+                                   rank<=rank_plot)
   if(title){
     title <- ifelse(nrow(rank_dates) < 1, 
                     paste0('Variable is never of rank ', rank_plot),
