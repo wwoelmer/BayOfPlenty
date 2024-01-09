@@ -113,12 +113,41 @@ df <- left_join(df, lvl, by = 'date')
 al <- read.csv('./data/processed_data/alum_dosing_rotoehu_2011_2022.csv')
 al$date <- as.Date(al$date)
 al <- al %>% 
-  select(date, L_alum_day)
+  select(date, L_alum_day) 
 
-df <- left_join(df, al, by = 'date')
+ggplot(al, aes(x = date, y  = L_alum_day)) +
+  geom_point(size = 2)
+
+# sum the amount of alum dosed since last sampling dates
+dates <- unique(df$date)
+al_sum <- data.frame()
+
+for(i in 134:length(dates)){ # start at 134 before no alum was dosed before dates[134]
+  sub <- al %>% 
+    filter(date <= dates[i] & date > dates[i-1]) %>% 
+    mutate(sum_alum = sum(L_alum_day), 
+           sample_date = dates[i]) %>% 
+    select(-L_alum_day)
+  al_sum <- rbind(al_sum, sub)
+  
+}
+
+al_sum <- al_sum %>% 
+  distinct(sample_date, .keep_all = TRUE) %>% 
+  select(-date) %>% 
+  rename(date = sample_date)
+
+ggplot(al_sum, aes(x = date, y  = sum_alum)) +
+  geom_point(size = 2)
+
+
+df <- left_join(df, al_sum, by = 'date')
 # set NA's to zero as there was no dosing done on these dates
 df <- df %>% 
-  mutate(L_alum_day = ifelse(date < min(al$date), 0, L_alum_day))
+  mutate(sum_alum = ifelse(date < min(al$date), 0, sum_alum))
+
+ggplot(df, aes(x = date, y  = sum_alum)) +
+  geom_point(size = 2)
 
 ## nutrients
 nuts <- read.csv(paste0('./data/processed_data/inflow_nutrients_2001_2023.csv'))
@@ -144,14 +173,14 @@ df <- left_join(df, lc_wide, by = c('lake', 'site', 'year'))
 
 #################################################
 # permutation entropy
-pe <- read.csv('./data/processed_data/PE_tli_vars.csv')
-pe <- pe %>% 
-  pivot_wider(names_from = variable, values_from = pe, names_prefix = 'PE_')
-pe$year <- as.numeric(pe$year)
-pe <- pe %>% 
-  select(-c(ndemb, n))
+#pe <- read.csv('./data/processed_data/PE_tli_vars.csv')
+#pe <- pe %>% 
+#  pivot_wider(names_from = variable, values_from = pe, names_prefix = 'PE_')
+#pe$year <- as.numeric(pe$year)
+#pe <- pe %>% 
+#  select(-c(ndemb, n))
 
-df <- left_join(df, pe, by = 'year')
+#df <- left_join(df, pe, by = 'year')
 
 ## write the dataset as master file
 write.csv(df, './data/master_rotoehu.csv', row.names = FALSE)
