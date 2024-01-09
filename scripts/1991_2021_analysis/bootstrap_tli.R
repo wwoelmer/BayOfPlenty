@@ -168,7 +168,7 @@ p1 <- ggplot(df_90_adj, aes(x = hydroyear, y = tli_annual)) +
   geom_hline(aes(yintercept = 3.9)) +
   ylab('Annual TLI')+
   xlab('Hydroyear')
-
+p1
 ggsave('./figures/uncertainty_90s_tli.png', p1, dpi = 300, units = 'mm', 
        height = 200, width = 400, scale = 0.5)
 
