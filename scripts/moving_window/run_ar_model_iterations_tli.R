@@ -51,29 +51,25 @@ ggplot(aes(x = as.Date(date), y = tli_annual)) +
   xlab('Date') +
   ylab('Annual TLI')
 
-
-# plot all land use vars to see which have changed
-dat %>% 
-  select(c("date", "area_pct_aq_vegetation", "area_pct_decid_hardwood","area_pct_exotic_forest",
-           "area_pct_forest_harvested", "area_pct_gorse", "area_pct_hp_exotic_grassland",
-           "area_pct_manuka", "area_pct_native_forest", "area_pct_native_hardwood",    
-           "area_pct_settlement", "area_pct_water")) %>% 
-  pivot_longer(area_pct_aq_vegetation:area_pct_water, names_to = 'variable', values_to = 'value') %>% 
-  ggplot(aes(x = as.Date(date), y = value, color = variable, fill = variable)) +
-  geom_area() +
-  xlab('Date') +
-  ylab('Percent of Catchment') +
-  theme_bw()
-
 #######################################################
 # run the ar model simulation
 source('./scripts/R/run_ar.R')
 
 # select variables to test
 test_vars <- c("air_temp_mean", "windspeed_max", "rain_mean","avg_level_m", 
-               "temp_C_8", "thermo_depth", "L_alum_day",  "area_pct_exotic_forest",
+               "temp_C_8", "thermo_depth", "sum_alum",  "area_pct_exotic_forest",
                "DO_sat_8", "bottom_DRP_ugL", "bottom_NH4_ugL", 
                 "bottom_NO3_ugL", "none")
+
+# this set of variables comes from the decadal analysis (90s, 2000s, 2010s)
+test_vars <- c("air_temp_mean", "windspeed_min", 
+               "avg_level_m", "monthly_avg_level_m",
+               "bottom_DRP_ugL", "bottom_NH4_ugL",
+               "temp_C_8", #"de_trended_temp_anomaly", 
+               "area_pct_hp_exotic_grassland",
+               "sum_alum",
+               "none")
+
 id_var <- "tli_monthly"
 window_length <- 100
 n_iter <- seq(1, nrow(dat) - window_length)
@@ -121,25 +117,44 @@ col_no <- length(unique(out$id_covar))
 col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 
 
-
-ggplotly(ggplot(out, aes(x = iter_start, y = r2, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
+###############################################################################
+### compare aic and r2
+ggplot(out, aes(x = iter_start, y = r2, color = id_covar)) +
   geom_line() +
-  theme_bw())
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(text=element_text(size=18)) +
+  xlab('Start date of iteration (+100 obs)') +
+  ylab('R2') +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate')
 
+aicc <- ggplot(out, aes(x = iter_start, y = aic, color = id_covar)) +
+  geom_line() +
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(text=element_text(size=18)) +
+  xlab('Start date of iteration (+100 obs)') +
+  ylab('AICc') +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate')
 
-ggplotly(ggplot(out, aes(x = iter_start, y = aic, color = id_covar)) +
-           geom_point() +
-           scale_color_manual(values = col_pal) +
-           geom_line() +
-           theme_bw())
+aic_r2_compare <- ggplot(out, aes(x = aic, y = r2, color = id_covar)) +
+  geom_point(size = 2) +
+  geom_smooth(method = 'lm') +
+  theme_bw() +
+  theme(text=element_text(size=18)) +
+  xlab('AICc') +
+  ylab('R2') +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate')
 
-ggplotly(ggplot(out, aes(x = aic, y = r2, color = id_covar)) +
-  geom_point() +
-    geom_smooth(method = 'lm') +
-  theme_bw())
+combined_fig <- ggarrange(aicc, aic_r2_compare, common.legend = TRUE, labels = 'AUTO')
+ggsave('./figures/moving_window/aic_r2_comparison.png', combined_fig,
+       dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.5)
 
+################################################################################
+# look at R2 results
 r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   geom_line() +
   geom_point(size = 2) +
@@ -151,8 +166,107 @@ r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)
   labs(color = 'Covariate')
 r2_results
 
+ggsave('./figures/moving_window/r2_timeseries.png', r2_results,
+       dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.5)
+
 tli + r2_results
 
+################################################################################
+# calculate the difference across variables
+out_prop <- out %>% 
+  distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
+  select(id_covar:iter_end, start_date, end_date, r2) %>% 
+  group_by(iter_start) %>% 
+  mutate(diff_from_best_r2 = max(r2) - r2,
+         rank_r2 = dense_rank(desc(r2)),
+         diff_from_best_aic = min(aic) - aic,
+         rank_aic = dense_rank((aic)))
+
+ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best_r2, color = id_covar)) +
+           geom_point() +
+           scale_color_manual(values = col_pal) +
+           theme_bw())
+
+
+#### area exotic forest doesn't follow expectations for r2 and aic
+## this article might be helpful: https://stats.stackexchange.com/questions/140965/when-aic-and-adjusted-r2-lead-to-different-conclusions
+
+ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
+  geom_point() +
+  scale_color_manual(values = col_pal) +
+  theme_bw() +
+  ylab('Difference from Best Performing Model') +
+  xlab('Start of Iteration') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=18))
+
+ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
+  geom_point() +
+  scale_color_manual(values = col_pal) +
+  theme_bw() +
+  facet_wrap(~id_covar) +
+  geom_hline(yintercept = 0) +
+  ylab('Difference from Best Performing Model') +
+  xlab('Start of Iteration') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=18))
+
+ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_r2), color = as.factor(id_covar))) +
+  geom_point() +
+  facet_wrap(~id_covar) +
+  theme_bw() +
+  ylab('Rank') +
+  xlab('Start of Iteration') +
+  theme(text=element_text(size=12)) +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate')
+
+ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_aic), color = as.factor(id_covar))) +
+  geom_point() +
+  facet_wrap(~id_covar) +
+  theme_bw() +
+  ylab('Rank') +
+  xlab('Start of Iteration') +
+  theme(text=element_text(size=12)) +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate')
+
+################################################################################
+# rank variables based on differences
+
+out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_r2", "rank_aic"), \(x) {
+  print(unique(x$id_covar))
+  #  print(unique(x$rank))
+  n <- nrow(x)
+  pct <- round(n/length(unique(out_prop$iter_start))*100)
+  return(data.frame(pct = pct))
+})
+
+
+# define colors for the right number of ranks
+## define color palettes for the right number of variables
+num_ranks <- length(unique(out_rank$rank))
+rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
+
+out_rank <- out_rank %>% 
+  group_by(rank) %>% 
+  arrange(pct)
+
+rank <- ggplot(out_rank, aes(x = reorder(id_covar, rank), y = pct, fill = fct_rev(as.factor(rank)))) +
+  geom_bar(stat = 'identity') +
+  scale_fill_manual(values = rank_pal) +
+  theme_bw() +
+  ylab('Percent of time') +
+  xlab('Covariate') +
+  labs(fill = 'Rank') +
+  theme(text=element_text(size=14),
+        axis.text.x = element_text(angle = 90, vjust = 0.5)) 
+rank
+ggsave('./figures/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.4)
+
+
+################################################################################
+# look at parameter values
 ggplot(out, aes(x = as.Date(start_date), y = value, color = id_covar)) +
   geom_point() +
   scale_color_manual(values = col_pal) +
@@ -188,88 +302,6 @@ out %>%
   geom_point() +
   facet_wrap(~covar, scales = 'free_y') +
   theme_bw()
-
-# calculate the proportional difference across variables
-out_prop <- out %>% 
-  distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
-  select(id_covar:iter_end, start_date, end_date, r2) %>% 
-  group_by(iter_start) %>% 
-  mutate(diff_from_best_r2 = max(r2) - r2,
-         rank_r2 = dense_rank(desc(r2)),
-         diff_from_best_aic = min(aic) - aic,
-         rank_aic = dense_rank(desc(aic)))
-
-ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best_r2, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
-  theme_bw())
-
-ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best_aic, color = id_covar)) +
-           geom_point() +
-           scale_color_manual(values = col_pal) +
-           theme_bw())
-#### area exotic forest doesn't follow expectations for r2 and aic
-## this article might be helpful: https://stats.stackexchange.com/questions/140965/when-aic-and-adjusted-r2-lead-to-different-conclusions
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
-  theme_bw() +
-  ylab('Difference from Best Performing Model') +
-  xlab('Start of Iteration') +
-  labs(color = 'Covariate') +
-  theme(text=element_text(size=18))
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
-  theme_bw() +
-  facet_wrap(~id_covar) +
-  geom_hline(yintercept = 0) +
-  ylab('Difference from Best Performing Model') +
-  xlab('Start of Iteration') +
-  labs(color = 'Covariate') +
-  theme(text=element_text(size=18))
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank), color = as.factor(id_covar))) +
-  geom_point() +
-  facet_wrap(~id_covar) +
-  theme_bw() +
-  ylab('Rank') +
-  xlab('Start of Iteration') +
-  theme(text=element_text(size=12)) +
-  scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
-  
-out_rank <- plyr::ddply(out_prop, c("id_covar", "rank"), \(x) {
-  print(unique(x$id_covar))
-  print(unique(x$rank))
-  n <- nrow(x)
-  pct <- round(n/length(unique(out_prop$iter_start))*100)
-  return(data.frame(pct = pct))
-})
-
-
-# define colors for the right number of ranks
-## define color palettes for the right number of variables
-num_ranks <- length(unique(out_rank$rank))
-rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
-  
-out_rank <- out_rank %>% 
-  group_by(rank) %>% 
-  arrange(pct)
-
-rank <- ggplot(out_rank, aes(x = reorder(id_covar, rank), y = pct, fill = fct_rev(as.factor(rank)))) +
-  geom_bar(stat = 'identity') +
-  scale_fill_manual(values = rank_pal) +
-  theme_bw() +
-  ylab('Percent of time') +
-  xlab('Covariate') +
-  labs(fill = 'Rank') +
-  theme(text=element_text(size=14),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)) 
-rank
-ggsave('./figures/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.4)
 
 ###############################################################################################
 # run the simulation on the entire dataset, without subsetting to time periods
