@@ -94,15 +94,24 @@ df <- left_join(df, met, by = c('month', 'year'))
 
 #####################################
 ## lake level
-
 lvl <- read_excel('./data/raw_data/EDS-686238-HL143688-Entire Record.xlsx', skip = 5)
 lvl <- na.omit(lvl)
 colnames(lvl) <- c('date', 'end', 'avg_level_m')
 lvl$avg_level_m <- as.numeric(lvl$avg_level_m)
 lvl <- lvl %>% select(-end)
+lvl$date <- as.POSIXct(lvl$date)
+lvl <- yr_to_hydro_yr(lvl)
+lvl$month <- month(lvl$date)
+#lvl <- lvl %>% select(-date)
 
-ggplot(lvl, aes(x = as.Date(date), y = avg_level_m)) +
-  geom_line()
+lvl <- lvl %>% 
+  group_by(month) %>% 
+  mutate(monthly_avg_level_m = mean(avg_level_m, na.rm = TRUE))
+df$date <- as.Date(df$date)
+lvl$date <- as.Date(lvl$date)
+lvl <- lvl %>% 
+  ungroup() %>% 
+  select(-month)
 
 df <- left_join(df, lvl, by = 'date')
 
@@ -184,3 +193,4 @@ df <- left_join(df, lc_wide, by = c('lake', 'site', 'year'))
 
 ## write the dataset as master file
 write.csv(df, './data/master_rotoehu.csv', row.names = FALSE)
+
