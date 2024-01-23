@@ -131,17 +131,6 @@ p_vars <- ggarrange(tn, tp, chl, secchi, common.legend = TRUE)
 p_vars
 ggsave('./figures/tli_vars_90s.png', p_vars, dpi = 300, units = 'mm', height = 350, width = 500, scale = 0.5)
 
-################################################################################################
-# calculate TLI
-source('./scripts/R/tli_fx.R')
-
-dat_90s <- dat_90s %>% 
-  mutate(tli = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m))
-
-ggplot(dat_90s, aes(x = as.factor(hydroyear), y = tli, color = as.factor(hydroyear))) +
-  geom_point(size = 4) +
-  theme_bw()
-
 ###################################################################################################
 # combine with data from 2001 onward
 dat_00s <- read.csv('./data/master_rotoehu.csv')
@@ -153,37 +142,26 @@ dat_00s <- dat_00s %>%
   select(date, chl_mgm3, secchi_m, TN_mgm3, TP_mgm3) 
 dat_00s <- yr_to_hydro_yr(data = dat_00s)
 
-dat_00s <- dat_00s %>% 
-  group_by(hydroyear) %>% 
-  mutate(tli = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m))
-
 
 dat_all <- full_join(dat_90s, dat_00s)
 
-####### compare difference between tli(mean(monthly)) and mean(tli(monthly))
-# calculate each month's tli
+################################################################################################
+# calculate TLI
+source('./scripts/R/tli_fx.R')
+
+# calculate each month's tli and each year's TLI (annual TLI is the mean of variable then TLI calculation, done within function)
 dat_all <- dat_all %>% 
-  rename(tli_mean_monthly = tli) %>% 
+  group_by(hydroyear) %>% 
+  mutate(tli_annual = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m, timescale = 'annual')) %>% 
   mutate(month = month(date)) %>% 
   group_by(hydroyear, month) %>% 
-  mutate(tli_monthly = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m))
-
-# mean of each variable, then calculate TLI
-dat_all <- dat_all %>% 
-  group_by(hydroyear) %>% 
-  mutate(chl_mgm3 = mean(chl_mgm3, na.rm = TRUE)) %>% 
-  mutate(secchi_m = mean(secchi_m, na.rm = TRUE)) %>% 
-  mutate(TN_mgm3 = mean(TN_mgm3, na.rm = TRUE)) %>% 
-  mutate(TP_mgm3 = mean(TP_mgm3, na.rm = TRUE)) %>% 
-  group_by(hydroyear) %>% 
-  mutate(tli_annual = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m)) 
+  mutate(tli_monthly = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m, timescale = 'monthly'))
 
 
 p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   geom_point(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear)), size = 2) +
   geom_line(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear))) +
   geom_line(size = 1.5) +
- # geom_line(aes(x = as.Date(date), y = tli_mean_monthly, color = 'mean of monhtly', size = 3)) +
   theme_bw() +
   xlab('Date') +
   ylab('Trophic Level Index') +
