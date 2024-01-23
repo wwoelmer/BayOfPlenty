@@ -6,6 +6,19 @@ library(zoo)
 
 ########################################################################################
 # extract data from excel file
+multiplesheets <- function(fname) {
+  
+  # getting info about all excel sheets
+  sheets <- readxl::excel_sheets(fname)
+  tibble <- lapply(sheets, function(x) readxl::read_excel(fname, sheet = x))
+  data_frame <- lapply(tibble, as.data.frame)
+  
+  # assigning names to data frames
+  names(data_frame) <- sheets
+  
+  # print data frame
+  print(data_frame)
+}
 
 # specifying the path name
 path <- './data/raw_data/BOPRC Lake Sampling CTD Profile Data - All Lakes Full Record.xlsx'
@@ -100,11 +113,6 @@ ggplot(spc, aes(x = date, y = diff, color = (depth_m))) +
 df <- df %>% 
   select(-SpC_uScm, -spcond_uScm)
 
-# calculate some anoxia variables
-ox <- df %>% 
-  group_by(lake, site, date)
-
-
 
 ###########################################################################################
 # save file as csv
@@ -118,11 +126,11 @@ ggplot(df, aes(x = date, y = spcond_uScm)) +
   geom_line() +
   facet_wrap(~lake, scales = 'free')
 
-ggplot(rotoehu_ctd, aes(x = date, y = spcond_uScm)) +
+ggplot(rotoehu_ctd, aes(x = date, y = spcond_uScm, color = as.factor(depth_m))) +
   geom_line() +
   facet_wrap(~lake, scales = 'free')
 
-ggplot(rotoehu_ctd, aes(x = date, y = SpC_uScm)) +
+ggplot(rotoehu_ctd, aes(x = date, y = SpC_uScm, color = as.factor(depth_m))) +
   geom_line() +
   facet_wrap(~lake, scales = 'free')
 
@@ -172,6 +180,25 @@ ctd_long %>%
   scale_y_reverse() +
   facet_wrap(~variable, scales= 'free') +
   theme_bw()
+
+ctd_long %>% 
+  filter(year==2003, month == 6) %>% 
+  ggplot(aes(x = value, y = depth_m, color = as.factor(month))) +
+  geom_point() +
+  geom_line(orientation = 'y') +
+  scale_y_reverse() +
+  facet_wrap(~variable, scales= 'free') +
+  theme_bw()
+
+
+ggplotly(ctd_long %>% 
+  filter(month == 3) %>% 
+  ggplot(aes(x = value, y = depth_m, color = as.factor(year))) +
+  geom_point() +
+  geom_line(orientation = 'y') +
+  scale_y_reverse() +
+  facet_wrap(~variable, scales= 'free') +
+  theme_bw())
 
 ggplotly(
   ctd_long %>% 
