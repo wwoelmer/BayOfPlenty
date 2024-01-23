@@ -128,6 +128,7 @@ secchi <- ggplot(dat_90s, aes(x = date, y = secchi_m, color = as.factor(hydroyea
   theme(text = element_text(size = 14))
 
 p_vars <- ggarrange(tn, tp, chl, secchi, common.legend = TRUE)
+p_vars
 ggsave('./figures/tli_vars_90s.png', p_vars, dpi = 300, units = 'mm', height = 350, width = 500, scale = 0.5)
 
 ################################################################################################
@@ -159,21 +160,30 @@ dat_00s <- dat_00s %>%
 
 dat_all <- full_join(dat_90s, dat_00s)
 
-
-ggplot(dat_all, aes(x = as.factor(hydroyear), y = tli, color = as.factor(hydroyear))) +
-  geom_point(size = 4) +
-  theme_bw()
-
+####### compare difference between tli(mean(monthly)) and mean(tli(monthly))
+# calculate each month's tli
 dat_all <- dat_all %>% 
-  rename(tli_annual = tli) %>% 
+  rename(tli_mean_monthly = tli) %>% 
   mutate(month = month(date)) %>% 
   group_by(hydroyear, month) %>% 
   mutate(tli_monthly = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m))
+
+# mean of each variable, then calculate TLI
+dat_all <- dat_all %>% 
+  group_by(hydroyear) %>% 
+  mutate(chl_mgm3 = mean(chl_mgm3, na.rm = TRUE)) %>% 
+  mutate(secchi_m = mean(secchi_m, na.rm = TRUE)) %>% 
+  mutate(TN_mgm3 = mean(TN_mgm3, na.rm = TRUE)) %>% 
+  mutate(TP_mgm3 = mean(TP_mgm3, na.rm = TRUE)) %>% 
+  group_by(hydroyear) %>% 
+  mutate(tli_annual = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m)) 
+
 
 p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   geom_point(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear)), size = 2) +
   geom_line(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear))) +
   geom_line(size = 1.5) +
+ # geom_line(aes(x = as.Date(date), y = tli_mean_monthly, color = 'mean of monhtly', size = 3)) +
   theme_bw() +
   xlab('Date') +
   ylab('Trophic Level Index') +
@@ -182,6 +192,7 @@ p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   theme(text = element_text(size = 14)) +
   geom_hline(aes(yintercept = mean(tli_annual), linetype = 'Mean'))
 p1
+
 
 mean(dat_all$tli_annual)
 
