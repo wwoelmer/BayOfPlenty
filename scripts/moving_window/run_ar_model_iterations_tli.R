@@ -10,6 +10,8 @@ library(tidymodels)
 library(plotly)
 library(RColorBrewer)
 library(patchwork)
+library(ggpubr)
+library(statcomp)
 
 
 # read in data
@@ -94,6 +96,8 @@ for(i in 1:length(test_vars)){
     start <- j
     end <- j + window_length
     dat_sub <- dat_ar[start:end,]
+    opd <-  weighted_ordinal_pattern_distribution(x = dat_sub$tli_monthly, ndemb = 4)
+    pe <- permutation_entropy(opd) 
     
     # run the model
     d <- run_ar(data = dat_sub, 
@@ -105,6 +109,7 @@ for(i in 1:length(test_vars)){
     d$start_date <- min(dat_sub$date)
     d$end_date <- max(dat_sub$date)
     d$n <- nrow(dat_sub)
+    d$pe <- pe
     out <- rbind(out, d)
     
   }
@@ -116,6 +121,57 @@ for(i in 1:length(test_vars)){
 col_no <- length(unique(out$id_covar))
 col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 
+
+################################################################################################################
+# analyze trends with permutation entropy
+out2 <- out %>% 
+  distinct(id_covar, iter_start, .keep_all = TRUE)
+
+ggplot(out2, aes(x = as.Date(start_date), y = pe)) +
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(text=element_text(size=18)) +
+  xlab('Start date of iteration') +
+  ylab('Permutation Entropy')
+  
+
+ggplot(out2, aes(x = pe, y = r2, color = as.factor(year(start_date)))) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  facet_wrap(~id_covar) +
+  guides(color = FALSE)
+
+ggplot(out2, aes(x = pe, y = r2, color = as.factor(id_covar))) +
+  geom_point() +
+  geom_smooth(method = 'lm') 
+ 
+ggplot(out2, aes(x = pe, y = r2, color = as.factor(id_covar))) +
+  geom_point() +
+  geom_smooth() 
+
+# take the mean across models because they are not independent?
+#  but what about the autocorrelation between simulations?
+out2 %>% 
+  group_by(start_date) %>% 
+  mutate(mean_r2 = mean(r2)) %>% 
+  ggplot(aes(x = pe, y = mean_r2)) +
+  geom_point(size = 2) +
+  theme(text=element_text(size=18)) +
+  geom_smooth(method = 'lm') +
+  ggtitle('Average across covariate models')
+
+out2 %>% 
+  group_by(start_date) %>% 
+  mutate(mean_r2 = mean(r2)) %>% 
+  ggplot(aes(x = pe, y = mean_r2)) +
+  geom_point(size = 2) +
+  theme(text=element_text(size=18)) +
+  geom_smooth() +
+  ggtitle('Average across covariate models')
+
+summary(lm(r2 ~ pe, data = out2))
+library(lme4)
+summary(lmer(r2 ~ pe + (pe | start_date), data = out2))
 
 ###############################################################################
 ### compare aic and r2
@@ -150,6 +206,7 @@ aic_r2_compare <- ggplot(out, aes(x = aic, y = r2, color = id_covar)) +
   labs(color = 'Covariate')
 
 combined_fig <- ggarrange(aicc, aic_r2_compare, common.legend = TRUE, labels = 'AUTO')
+combined_fig
 ggsave('./figures/moving_window/aic_r2_comparison.png', combined_fig,
        dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.5)
 
@@ -164,6 +221,16 @@ r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)
   ylab('R2') +
   scale_color_manual(values = col_pal) +
   labs(color = 'Covariate')
+
+ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
+  geom_line() +
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(text=element_text(size=18)) +
+  xlab('Start date of iteration (+100 obs)') +
+  ylab('R2') +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate'))
 r2_results
 
 ggsave('./figures/moving_window/r2_timeseries.png', r2_results,
@@ -182,23 +249,35 @@ out_prop <- out %>%
          diff_from_best_aic = min(aic) - aic,
          rank_aic = dense_rank((aic)))
 
-ggplotly(ggplot(out_prop, aes(x = iter_start, y = diff_from_best_r2, color = id_covar)) +
-           geom_point() +
-           scale_color_manual(values = col_pal) +
-           theme_bw())
-
-
-#### area exotic forest doesn't follow expectations for r2 and aic
-## this article might be helpful: https://stats.stackexchange.com/questions/140965/when-aic-and-adjusted-r2-lead-to-different-conclusions
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
-  geom_point() +
+diff_r2 <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
+  geom_point(size = 2) +
   scale_color_manual(values = col_pal) +
   theme_bw() +
   ylab('Difference from Best Performing Model') +
   xlab('Start of Iteration') +
   labs(color = 'Covariate') +
   theme(text=element_text(size=18))
+
+ggplotly(diff_r2)
+ggsave('./figures/moving_window/diff_from_best_r2_timeseries.png', diff_r2,
+       dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.5)
+
+diff_r2_panels <- ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_r2), color = as.factor(id_covar))) +
+  geom_point() +
+  facet_wrap(~id_covar) +
+  theme_bw() +
+  ylab('Rank') +
+  xlab('Start of Iteration') +
+  theme(text=element_text(size=18)) +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Covariate')
+ggplotly(diff_r2_panels)
+
+ggsave('./figures/moving_window/r2_rank_timeseries.png', diff_r2_panels,
+       dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.4)
+diff_r2_figs <- ggarrange(diff_r2, diff_r2_panels, common.legend = TRUE, labels = 'AUTO')
+
+
 
 ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
   geom_point() +
@@ -211,15 +290,7 @@ ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_
   labs(color = 'Covariate') +
   theme(text=element_text(size=18))
 
-ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_r2), color = as.factor(id_covar))) +
-  geom_point() +
-  facet_wrap(~id_covar) +
-  theme_bw() +
-  ylab('Rank') +
-  xlab('Start of Iteration') +
-  theme(text=element_text(size=12)) +
-  scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
+
 
 ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_aic), color = as.factor(id_covar))) +
   geom_point() +
