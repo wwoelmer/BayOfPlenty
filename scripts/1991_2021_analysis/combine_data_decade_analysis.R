@@ -31,11 +31,15 @@ met$decade <- getDecade(met$year)
 
 # select most "important" met variables
 met <- met %>% 
-  select(year, hydroyear, month, decade, everything(), -hydroyear_label, -date)
+  select(year, hydroyear, month, decade, everything(), -hydroyear_label)
 
 met_long <- met %>% 
   filter(decade!='2020' & decade!='80') %>% 
   pivot_longer(air_temp_min:windspeed_max, names_to = 'variable', values_to = 'value')
+
+ggplot(met_long, aes(x = as.Date(date), y = value, color = as.factor(decade))) +
+  geom_line() +
+  facet_wrap(~variable, scales = 'free_y')
 
 df <- left_join(tli, met, by = c('hydroyear', 'month'))
 df <- df %>% 
@@ -113,6 +117,10 @@ lvl$date <- as.POSIXct(lvl$date)
 lvl <- yr_to_hydro_yr(lvl)
 lvl$month <- month(lvl$date)
 #lvl <- lvl %>% select(-date)
+
+ggplot(lvl, aes(x = as.Date(date), y = avg_level_m)) +
+  geom_line() + 
+  xlim(as.Date('1990-01-01'), as.Date('2020-12-31'))
 
 lvl <- lvl %>% 
   group_by(month) %>% 
