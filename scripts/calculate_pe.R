@@ -50,7 +50,7 @@ ggplot(out, aes(x = ndemb, y = pe, color = as.factor(year))) +
 PE <- plyr::ddply(dat_long, c("year", "variable"), \(x) {
   print(head(x))
   data = x$value
-  opd = ordinal_pattern_distribution(x = data, ndemb = 4)
+  opd = weighted_ordinal_pattern_distribution(x = data, ndemb = 4)
   pe <- permutation_entropy(opd)
   data.frame(ndemb = 4, pe = pe, n = nrow(x))
 })
