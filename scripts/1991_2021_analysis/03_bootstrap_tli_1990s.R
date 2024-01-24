@@ -172,20 +172,3 @@ p1
 ggsave('./figures/uncertainty_90s_tli.png', p1, dpi = 300, units = 'mm', 
        height = 200, width = 400, scale = 0.5)
 
-
-##########################################################################
-##########################################################################
-# bootstrap from whole dataset
-# create the Estimated Sampling Distribution of xbar
-BootDist <- boot(data = df_90$tli_monthly, statistic = mean.function, R=10000)
-BootDist2 <- boot(data = df_00_21$tli_monthly, statistic = mean.function, R=10000)
-BootDist3 <- boot(data = df$tli_monthly, statistic = mean.function, R=10000)
-BootDist
-BootDist2
-BootDist3
-boot.ci(BootDist2)
-
-quantile(BootDist$t, probs=c(.025, .975) )
-quantile(BootDist2$t, probs=c(.025, .975) )
-4.1-4.4
-4.3-4.4
