@@ -10,6 +10,9 @@ library(ggpomological)
 
 df <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv')
 
+ggplot(df, aes(x = as.Date(date), y = tli_monthly, color = as.factor(decade))) +
+  geom_point() +geom_line()
+
 df_long <- df %>% 
   select(-soi_phase, -year, -temp_0) %>%
   filter(decade <2020) %>% 
