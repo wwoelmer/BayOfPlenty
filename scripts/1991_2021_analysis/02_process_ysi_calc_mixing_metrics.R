@@ -46,12 +46,40 @@ bty <- bty %>%
 bthA <- bty$model_sd_m2
 bthD <- bty$depth_m
 
+bty_interp <- data.frame(lake = bty$lake[1],
+                         depth_m = seq(1, max(bty$depth_m), 1),
+                         vol_at_contour_m3  = approx(bty$depth_m, bty$vol_at_countour_m3 , seq(0, max(bty$depth_m) - 1, 1))$y)
+######################################################################################################
+# calculate volumetrically weighted DO
 
-t_metrics <- ysi %>% 
-  select(date, depth_m, temp_C) %>% 
+
+hypo_o2 <- ysi %>% 
+  select(date, depth_m, temp_C, DO_mgl) %>% 
   distinct(date, depth_m, .keep_all = TRUE) %>% 
   group_by(date) %>% 
-  mutate(thermo_depth = thermo.depth(temp_C, depth_m, seasonal = TRUE),
+  mutate(hypo_depth = meta.depths(temp_C, depth_m, seasonal = FALSE, mixed.cutoff = 0)[2]) %>% 
+  group_by(date) %>% 
+  filter(depth_m > hypo_depth) %>% 
+  left_join(bty_interp, by = 'depth_m') %>% 
+  mutate(DO_vol = DO_mgl*vol_at_contour_m3)
+
+hypo_VW <- hypo_o2 %>% 
+  group_by(date) %>% 
+  summarise(DO_sum = sum(DO_vol))
+
+
+ggplot(hypo_VW, aes(x = as.Date(date), y = DO_sum)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth()
+
+##################################################################################
+
+t_metrics <- ysi %>% 
+  select(date, depth_m, temp_C, DO_mgl) %>% 
+  distinct(date, depth_m, .keep_all = TRUE) %>% 
+  group_by(date) %>% 
+  mutate(thermo_depth = thermo.depth(temp_C, depth_m, seasonal = FALSE),
          thermo_depth = ifelse(is.na(thermo_depth), 0, thermo_depth),
          schmidt_stability = schmidt.stability(temp_C, 
                                                depth_m, 
