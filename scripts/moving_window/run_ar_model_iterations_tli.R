@@ -121,6 +121,15 @@ for(i in 1:length(test_vars)){
 col_no <- length(unique(out$id_covar))
 col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 
+out$id_covar <- factor(out$id_covar, 
+                      levels = c("avg_level_m", "bottom_DRP_ugL", "bottom_NH4_ugL",
+                                   "monthly_avg_level_m", "sum_alum", "windspeed_min", 
+                                   "area_pct_hp_exotic_grassland", "none", "temp_C_8", 
+                                   "air_temp_mean"),
+                      labels = c("daily water level", "bottom DRP", "bottom NH4",
+                                   "monthly water level", "alum dosed", "min windspeed",
+                                   "% exotic grassland", "none", "bottom water temp",
+                                   "air temp"))
 
 ################################################################################################################
 # analyze trends with permutation entropy
@@ -244,12 +253,12 @@ out_prop <- out %>%
   distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
   select(id_covar:iter_end, start_date, end_date, r2) %>% 
   group_by(iter_start) %>% 
-  mutate(diff_from_best_r2 = max(r2) - r2,
-         rank_r2 = dense_rank(desc(r2)),
-         diff_from_best_aic = min(aic) - aic,
-         rank_aic = dense_rank((aic)))
+  mutate(diff_from_best = max(r2) - r2,
+         rank = dense_rank(desc(r2)),
+         r2_none = r2[id_covar=='none'],
+         diff_from_none = r2 - r2_none)
 
-diff_r2 <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
+diff_r2 <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
   geom_point(size = 2) +
   scale_color_manual(values = col_pal) +
   theme_bw() +
@@ -262,7 +271,7 @@ ggplotly(diff_r2)
 ggsave('./figures/moving_window/diff_from_best_r2_timeseries.png', diff_r2,
        dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.5)
 
-diff_r2_panels <- ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_r2), color = as.factor(id_covar))) +
+diff_r2_panels <- ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank), color = as.factor(id_covar))) +
   geom_point() +
   facet_wrap(~id_covar) +
   theme_bw() +
@@ -275,11 +284,15 @@ ggplotly(diff_r2_panels)
 
 ggsave('./figures/moving_window/r2_rank_timeseries.png', diff_r2_panels,
        dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.4)
-diff_r2_figs <- ggarrange(diff_r2, diff_r2_panels, common.legend = TRUE, labels = 'AUTO')
+diff_r2_figs <- ggarrange(diff_r2, diff_r2_panels, 
+                          common.legend = TRUE, labels = 'AUTO',
+                          widths = c(1, 1.2))
+diff_r2_figs
 
+ggsave('./figures/moving_window/r2_diff_both.png', diff_r2_figs,
+       dpi = 300, units = 'mm', height = 400, width = 900, scale = 0.4)
 
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_covar)) +
+ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
   geom_point() +
   scale_color_manual(values = col_pal) +
   theme_bw() +
@@ -290,22 +303,25 @@ ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best_r2, color = id_
   labs(color = 'Covariate') +
   theme(text=element_text(size=18))
 
-
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank_aic), color = as.factor(id_covar))) +
-  geom_point() +
-  facet_wrap(~id_covar) +
-  theme_bw() +
-  ylab('Rank') +
-  xlab('Start of Iteration') +
-  theme(text=element_text(size=12)) +
+#### look at difference from none model
+# positive values indicate that model was better than the none model (better than autoregression alone)
+ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
+  geom_point(size = 2) +
   scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
+  theme_bw() +
+  ylab('Difference from Best Performing Model') +
+  xlab('Start of Iteration') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=18))
+
 
 ################################################################################
 # rank variables based on differences
 
-out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_r2", "rank_aic"), \(x) {
+out_prop <- out_prop %>% 
+  select(id_covar:rank)
+
+out_rank <- plyr::ddply(out_prop, c("id_covar", "rank"), \(x) {
   print(unique(x$id_covar))
   #  print(unique(x$rank))
   n <- nrow(x)
@@ -321,9 +337,11 @@ rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
 
 out_rank <- out_rank %>% 
   group_by(rank) %>% 
-  arrange(pct)
+  arrange(pct) %>% 
+  group_by(id_covar) %>% 
+  mutate(sum = sum(pct*rank))
 
-rank <- ggplot(out_rank, aes(x = reorder(id_covar, rank), y = pct, fill = fct_rev(as.factor(rank)))) +
+rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev(as.factor(rank)))) +
   geom_bar(stat = 'identity') +
   scale_fill_manual(values = rank_pal) +
   theme_bw() +
@@ -331,17 +349,28 @@ rank <- ggplot(out_rank, aes(x = reorder(id_covar, rank), y = pct, fill = fct_re
   xlab('Covariate') +
   labs(fill = 'Rank') +
   theme(text=element_text(size=14),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)) 
+        axis.text.x = element_text(angle = 45, vjust = 0.55)) 
 rank
-ggsave('./figures/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.4)
+ggsave('./figures/moving_window/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
 
 
 ################################################################################
 # look at parameter values
-ggplot(out, aes(x = as.Date(start_date), y = value, color = id_covar)) +
-  geom_point() +
+params <- out %>% 
+  filter(covar %in% test_vars) %>% 
+  ggplot(aes(x = as.Date(start_date), y = value, color = id_covar)) +
+  geom_point(size = 2) +
   scale_color_manual(values = col_pal) +
-  facet_wrap(~covar, scales = 'free_y')
+  facet_wrap(~id_covar, scales = 'free_y') +
+  theme_bw() +
+  xlab('Start of Iteration') +
+  ylab('Parameter Value') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=12))
+
+params
+ggsave('./figures/moving_window/parameter_time_series.png', params, dpi = 300, units = 'mm', 
+       height = 400, width = 700, scale = 0.3)
 
 ## select a single driving covariate and compare across model parameters
 out %>% 
