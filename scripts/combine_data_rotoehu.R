@@ -105,7 +105,7 @@ lvl$month <- month(lvl$date)
 #lvl <- lvl %>% select(-date)
 
 lvl <- lvl %>% 
-  group_by(month) %>% 
+  group_by(hydroyear, month) %>% 
   mutate(monthly_avg_level_m = mean(avg_level_m, na.rm = TRUE))
 df$date <- as.Date(df$date)
 lvl$date <- as.Date(lvl$date)
