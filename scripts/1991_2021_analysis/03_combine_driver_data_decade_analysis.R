@@ -41,6 +41,8 @@ ggplot(met_long, aes(x = as.Date(date), y = value, color = as.factor(decade))) +
   geom_line() +
   facet_wrap(~variable, scales = 'free_y')
 
+met <- met %>% select(-date)
+
 df <- left_join(tli, met, by = c('hydroyear', 'month'))
 df <- df %>% 
   select(date, hydroyear, hydroyear_label, month, decade, tli_annual, tli_monthly, everything(), -year)
@@ -118,15 +120,16 @@ lvl <- yr_to_hydro_yr(lvl)
 lvl$month <- month(lvl$date)
 #lvl <- lvl %>% select(-date)
 
-ggplot(lvl, aes(x = as.Date(date), y = avg_level_m)) +
-  geom_line() + 
-  xlim(as.Date('1990-01-01'), as.Date('2020-12-31'))
-
 lvl <- lvl %>% 
-  group_by(month) %>% 
+  group_by(month, hydroyear) %>% 
   mutate(monthly_avg_level_m = mean(avg_level_m, na.rm = TRUE))
 df$date <- as.Date(df$date)
 lvl$date <- as.Date(lvl$date)
+
+ggplot(lvl, aes(x = as.Date(date), y = avg_level_m, color = 'daily')) +
+  geom_line() + 
+  geom_line(aes(x = as.Date(date), y = monthly_avg_level_m, color = 'monthly')) +
+  xlim(as.Date('1990-01-01'), as.Date('2020-12-31'))
 
 df <- left_join(df, lvl, by = c('date', 'hydroyear', 'hydroyear_label', 'month'))
 
