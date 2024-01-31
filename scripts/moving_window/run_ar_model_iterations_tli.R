@@ -25,6 +25,11 @@ dat$hydroyear <- as.numeric(dat$hydroyear)
 dat$hydroyear_label <- paste(dat$hydroyear-1, dat$hydroyear, sep = "-")
 
 
+# remove daily water level as it is similar ot monthly (see daily_vs_monthly_water_level_comparison.R)
+dat <- dat %>% 
+  select(-avg_level_m)
+
+
 # calculate monthly TLI
 source('./scripts/R/tli_fx.R')
 
@@ -57,17 +62,11 @@ ggplot(aes(x = as.Date(date), y = tli_annual)) +
 # run the ar model simulation
 source('./scripts/R/run_ar.R')
 
-# select variables to test
-test_vars <- c("air_temp_mean", "windspeed_max", "rain_mean","avg_level_m", 
-               "temp_C_8", "thermo_depth", "sum_alum",  "area_pct_exotic_forest",
-               "DO_sat_8", "bottom_DRP_ugL", "bottom_NH4_ugL", 
-                "bottom_NO3_ugL", "none")
-
-# this set of variables comes from the decadal analysis (90s, 2000s, 2010s)
-test_vars <- c("air_temp_mean", "windspeed_min", 
-               "avg_level_m", "monthly_avg_level_m",
-               "bottom_DRP_ugL", "bottom_NH4_ugL",
-               "temp_C_8", #"de_trended_temp_anomaly", 
+# this set of variables comes from the decadal analysis (90s, 2000s, 2010s) plus land cover, alum, and 'none'
+test_vars <- c("bottom_DRP_ugL", "bottom_NH4_ugL",
+               "temp_C_8", "air_temp_mean", "windspeed_min", 
+               "monthly_avg_level_m", 
+               "schmidt_stability", 
                "area_pct_hp_exotic_grassland",
                "sum_alum",
                "none")
@@ -314,6 +313,16 @@ ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_cov
   labs(color = 'Covariate') +
   theme(text=element_text(size=18))
 
+ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
+  geom_point() +
+  scale_color_manual(values = col_pal) +
+  theme_bw() +
+  facet_wrap(~id_covar) +
+  geom_hline(yintercept = 0) +
+  ylab('Difference from Best Performing Model') +
+  xlab('Start of Iteration') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=18))
 
 ################################################################################
 # rank variables based on differences
