@@ -6,6 +6,7 @@ library(tidyverse)
 library(Hmisc)
 library(ggthemes)
 library(RColorBrewer)
+library(plotly)
 library(ggpomological)
 
 df <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv')
@@ -13,6 +14,11 @@ df <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv
 ggplot(df, aes(x = as.Date(date), y = tli_monthly, color = as.factor(decade))) +
   geom_point() +geom_line()
 
+# remove daily water level as it is similar ot monthly (see daily_vs_monthly_water_level_comparison.R)
+df <- df %>% 
+  select(-avg_level_m)
+
+#####################################
 df_long <- df %>% 
   select(-soi_phase, -year, -temp_0) %>%
   filter(decade <2020) %>% 
@@ -91,21 +97,17 @@ vars_remove <- c('air_temp_max', 'air_temp_min', 'longwave_max', 'longwave_min')
 vars_out <- vars_out %>% 
   filter(variable %notin% vars_remove)
 
-
 col_pal <- colorRampPalette(brewer.pal(9, "Paired"))(13)
-
 
 vars_select <- vars_out %>% 
   filter(value > 0.3 | value < -0.3)  
 vars_select$variable <- factor(vars_select$variable, 
-                               levels = c("air_temp_mean", "windspeed_min", 
-                                          "avg_level_m", "monthly_avg_level_m", 
-                                          "DRP_mgm3", "NH4_mgm3", 
-                                          "temp_8", "de_trended_temp_anomaly"),
-                               labels = c("mean air temperature", "min windspeed", 
-                                          "water level", "average water level", 
-                                          "bottom DRP", "bottom NH4", 
-                                          "bottom temperature", "temperature anomaly"))
+                               levels = c("DRP_mgm3", "NH4_mgm3", "temp_8",
+                                          "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
+                                          "schmidt_stability", "de_trended_temp_anomaly"),
+                               labels = c("bottom DRP", "bottom NH4", "bottom water temp",
+                                          "mean air temp", "min windspeed", "monthly water level", 
+                                          "schmidt stability", "temp anomaly"))
 
 p1 <- ggplot(vars_select, aes(x = decade, y = value, fill = variable)) +
   geom_col(position = 'dodge') +
@@ -118,16 +120,25 @@ p1 <- ggplot(vars_select, aes(x = decade, y = value, fill = variable)) +
   theme_bw() +
   ylab('Correlation Coefficient') 
 p1
-ggsave('./figures/r_by_decade.png', p1, dpi = 300, units = 'mm', height = 200, width = 500, scale = 0.4)
+ggsave('./figures/1991_2021_analysis/r_by_decade.png', p1, dpi = 300, units = 'mm', height = 200, width = 500, scale = 0.4)
 
 ################################################################################
 vars_sig <- vars_out %>% 
   filter(value > 0.3 | value < -0.3) 
 vars_plot <- unique(vars_sig$variable)
 
-p2 <- df_long %>% 
-  filter(variable %in% vars_plot) %>% 
-ggplot(aes(x = as.factor(decade), y = value, fill = as.factor(decade))) +
+df_vars_sig <- df_long %>% 
+  filter(variable %in% vars_plot) 
+  
+df_vars_sig$variable <- factor(df_vars_sig$variable, 
+                               levels = c("DRP_mgm3", "NH4_mgm3", "temp_8",
+                                          "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
+                                          "schmidt_stability", "de_trended_temp_anomaly"),
+                               labels = c("bottom DRP", "bottom NH4", "bottom water temp",
+                                          "mean air temp", "min windspeed", "monthly water level", 
+                                          "schmidt stability", "temp anomaly"))
+
+p2 <- ggplot(df_vars_sig, aes(x = as.factor(decade), y = value, fill = as.factor(decade))) +
   geom_boxplot() +
   scale_fill_pomological() +
   facet_wrap(~variable, scales = 'free') +
@@ -135,7 +146,7 @@ ggplot(aes(x = as.factor(decade), y = value, fill = as.factor(decade))) +
   xlab('Decade') +
   labs(fill = 'Decade')
 p2
-ggsave('./figures/selected_vars_decade_boxplots.png', p2, dpi = 300, units = 'mm', 
+ggsave('./figures/1991_2021_analysis/selected_vars_decade_boxplots.png', p2, dpi = 300, units = 'mm', 
        height = 300, width = 500, scale = 0.4)
 
 df_summary <- df_long %>% 
@@ -153,6 +164,6 @@ ggplot(df_long, aes(y = month)) +
 df_long %>% 
   filter(variable=='windspeed_min') %>% 
 ggplot(aes(x = month, y = value)) +
-  geom_bar(stat = 'sum') +
+  geom_bar(stat = 'identity') +
   facet_wrap(~decade) +
   theme_bw() 
