@@ -67,7 +67,6 @@ test_vars <- c("bottom_DRP_ugL", "bottom_NH4_ugL",
                "temp_C_8", "air_temp_mean", "windspeed_min", 
                "monthly_avg_level_m", 
                "schmidt_stability", 
-               "area_pct_hp_exotic_grassland",
                "sum_alum",
                "none")
 
@@ -114,109 +113,18 @@ for(i in 1:length(test_vars)){
   }
 }
 
+write.csv(out, './data/processed_data/moving_window/model_output.csv', row.names = FALSE)
 
-
-## define color palettes for the right number of variables
-col_no <- length(unique(out$id_covar))
-col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
+################################################################################
+# set up labels and levels of factor
 
 out$id_covar <- factor(out$id_covar, 
-                      levels = c("avg_level_m", "bottom_DRP_ugL", "bottom_NH4_ugL",
-                                   "monthly_avg_level_m", "sum_alum", "windspeed_min", 
-                                   "area_pct_hp_exotic_grassland", "none", "temp_C_8", 
-                                   "air_temp_mean"),
-                      labels = c("daily water level", "bottom DRP", "bottom NH4",
-                                   "monthly water level", "alum dosed", "min windspeed",
-                                   "% exotic grassland", "none", "bottom water temp",
-                                   "air temp"))
-
-################################################################################################################
-# analyze trends with permutation entropy
-out2 <- out %>% 
-  distinct(id_covar, iter_start, .keep_all = TRUE)
-
-ggplot(out2, aes(x = as.Date(start_date), y = pe)) +
-  geom_point(size = 2) +
-  theme_bw() +
-  theme(text=element_text(size=18)) +
-  xlab('Start date of iteration') +
-  ylab('Permutation Entropy')
-  
-
-ggplot(out2, aes(x = pe, y = r2, color = as.factor(year(start_date)))) +
-  geom_point() +
-  geom_smooth(method = 'lm') +
-  facet_wrap(~id_covar) +
-  guides(color = FALSE)
-
-ggplot(out2, aes(x = pe, y = r2, color = as.factor(id_covar))) +
-  geom_point() +
-  geom_smooth(method = 'lm') 
- 
-ggplot(out2, aes(x = pe, y = r2, color = as.factor(id_covar))) +
-  geom_point() +
-  geom_smooth() 
-
-# take the mean across models because they are not independent?
-#  but what about the autocorrelation between simulations?
-out2 %>% 
-  group_by(start_date) %>% 
-  mutate(mean_r2 = mean(r2)) %>% 
-  ggplot(aes(x = pe, y = mean_r2)) +
-  geom_point(size = 2) +
-  theme(text=element_text(size=18)) +
-  geom_smooth(method = 'lm') +
-  ggtitle('Average across covariate models')
-
-out2 %>% 
-  group_by(start_date) %>% 
-  mutate(mean_r2 = mean(r2)) %>% 
-  ggplot(aes(x = pe, y = mean_r2)) +
-  geom_point(size = 2) +
-  theme(text=element_text(size=18)) +
-  geom_smooth() +
-  ggtitle('Average across covariate models')
-
-summary(lm(r2 ~ pe, data = out2))
-library(lme4)
-summary(lmer(r2 ~ pe + (pe | start_date), data = out2))
-
-###############################################################################
-### compare aic and r2
-ggplot(out, aes(x = iter_start, y = r2, color = id_covar)) +
-  geom_line() +
-  geom_point(size = 2) +
-  theme_bw() +
-  theme(text=element_text(size=18)) +
-  xlab('Start date of iteration (+100 obs)') +
-  ylab('R2') +
-  scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
-
-aicc <- ggplot(out, aes(x = iter_start, y = aic, color = id_covar)) +
-  geom_line() +
-  geom_point(size = 2) +
-  theme_bw() +
-  theme(text=element_text(size=18)) +
-  xlab('Start date of iteration (+100 obs)') +
-  ylab('AICc') +
-  scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
-
-aic_r2_compare <- ggplot(out, aes(x = aic, y = r2, color = id_covar)) +
-  geom_point(size = 2) +
-  geom_smooth(method = 'lm') +
-  theme_bw() +
-  theme(text=element_text(size=18)) +
-  xlab('AICc') +
-  ylab('R2') +
-  scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
-
-combined_fig <- ggarrange(aicc, aic_r2_compare, common.legend = TRUE, labels = 'AUTO')
-combined_fig
-ggsave('./figures/moving_window/aic_r2_comparison.png', combined_fig,
-       dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.5)
+                       levels = c("bottom_DRP_ugL", "bottom_NH4_ugL", "temp_C_8",
+                                  "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
+                                  "schmidt_stability", "sum_alum", "none"),
+                       labels = c("bottom DRP", "bottom NH4", "bottom water temp",
+                                  "mean air temp", "min windspeed", "monthly water level", 
+                                  "schmidt stability", "alum dosed", "none"))
 
 ################################################################################
 # look at R2 results
@@ -242,7 +150,7 @@ ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
 r2_results
 
 ggsave('./figures/moving_window/r2_timeseries.png', r2_results,
-       dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.5)
+       dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.4)
 
 tli + r2_results
 
@@ -282,7 +190,7 @@ diff_r2_panels <- ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(ra
 ggplotly(diff_r2_panels)
 
 ggsave('./figures/moving_window/r2_rank_timeseries.png', diff_r2_panels,
-       dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.4)
+       dpi = 300, units = 'mm', height = 300, width = 550, scale = 0.4)
 diff_r2_figs <- ggarrange(diff_r2, diff_r2_panels, 
                           common.legend = TRUE, labels = 'AUTO',
                           widths = c(1, 1.2))
@@ -291,27 +199,18 @@ diff_r2_figs
 ggsave('./figures/moving_window/r2_diff_both.png', diff_r2_figs,
        dpi = 300, units = 'mm', height = 400, width = 900, scale = 0.4)
 
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
-  theme_bw() +
-  facet_wrap(~id_covar) +
-  geom_hline(yintercept = 0) +
-  ylab('Difference from Best Performing Model') +
-  xlab('Start of Iteration') +
-  labs(color = 'Covariate') +
-  theme(text=element_text(size=18))
-
+##################################################################################################
+# for manuscript but not report
 #### look at difference from none model
 # positive values indicate that model was better than the none model (better than autoregression alone)
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
+ggplotly(ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
   geom_point(size = 2) +
   scale_color_manual(values = col_pal) +
   theme_bw() +
-  ylab('Difference from Best Performing Model') +
+  ylab('Difference from "none" model') +
   xlab('Start of Iteration') +
   labs(color = 'Covariate') +
-  theme(text=element_text(size=18))
+  theme(text=element_text(size=18)))
 
 ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
   geom_point() +
@@ -319,7 +218,7 @@ ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_cov
   theme_bw() +
   facet_wrap(~id_covar) +
   geom_hline(yintercept = 0) +
-  ylab('Difference from Best Performing Model') +
+  ylab('Difference from "none" model') +
   xlab('Start of Iteration') +
   labs(color = 'Covariate') +
   theme(text=element_text(size=18))
@@ -331,8 +230,6 @@ out_prop <- out_prop %>%
   select(id_covar:rank)
 
 out_rank <- plyr::ddply(out_prop, c("id_covar", "rank"), \(x) {
-  print(unique(x$id_covar))
-  #  print(unique(x$rank))
   n <- nrow(x)
   pct <- round(n/length(unique(out_prop$iter_start))*100)
   return(data.frame(pct = pct))
@@ -368,18 +265,18 @@ ggsave('./figures/moving_window/rank_barplot.png', rank, dpi = 300, units = 'mm'
 params <- out %>% 
   filter(covar %in% test_vars) %>% 
   ggplot(aes(x = as.Date(start_date), y = value, color = id_covar)) +
-  geom_point(size = 2) +
+  geom_point() +
   scale_color_manual(values = col_pal) +
   facet_wrap(~id_covar, scales = 'free_y') +
   theme_bw() +
   xlab('Start of Iteration') +
   ylab('Parameter Value') +
   labs(color = 'Covariate') +
-  theme(text=element_text(size=12))
+  theme(text=element_text(size=15))
 
 params
 ggsave('./figures/moving_window/parameter_time_series.png', params, dpi = 300, units = 'mm', 
-       height = 400, width = 700, scale = 0.3)
+       height = 300, width = 550, scale = 0.4)
 
 ## select a single driving covariate and compare across model parameters
 out %>% 
@@ -405,7 +302,7 @@ out %>%
 
 ## look at p-values
 out %>% 
-  filter(id_covar=='air_temp_mean',
+  filter(id_covar=='none',
          p_value < 0.05) %>% 
   ggplot(aes(x = as.Date(start_date), y = p_value, color = covar)) +
   geom_point() +
