@@ -70,11 +70,6 @@ dat %>%
 source('./scripts/R/run_ar.R')
 
 # select variables to test
-test_vars <- c("air_temp_mean", "windspeed_max", "rain_mean","avg_level_m", 
-               "temp_C_8", "thermo_depth", "sum_alum",  "area_pct_exotic_forest",
-               "DO_sat_8", "bottom_DRP_ugL", "bottom_NH4_ugL", 
-               "bottom_NO3_ugL", "none")
-
 # this set of variables comes from the decadal analysis (90s, 2000s, 2010s)
 test_vars <- c("air_temp_mean", "windspeed_min", 
                "avg_level_m", 
@@ -152,5 +147,42 @@ si_landuse <- out %>%
   scale_color_manual(values = col_pal) +
   geom_line() +
   theme_bw()
-
+ggplotly(si_landuse)
 ggsave('./figures/moving_window/si_fig_landuse_vars_r2.png', si_landuse, dpi = 300, units = 'mm', height = 300, width = 500, scale = 0.4)
+
+# calculate the difference across variables
+out_prop <- out %>% 
+  distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
+  select(id_covar:iter_end, start_date, end_date, r2) %>% 
+  group_by(iter_start) %>% 
+  mutate(diff_from_best = max(r2) - r2,
+         rank = dense_rank(desc(r2)),
+         r2_none = r2[id_covar=='none'],
+         diff_from_none = r2 - r2_none)
+
+si_landuse_diff <- out_prop %>% 
+  filter(id_covar %in% c(  "area_pct_aq_vegetation", "area_pct_decid_hardwood","area_pct_exotic_forest",
+                           "area_pct_forest_harvested", "area_pct_gorse", "area_pct_hp_exotic_grassland",
+                           "area_pct_manuka", "area_pct_native_forest", "area_pct_native_hardwood",    
+                           "area_pct_settlement", "area_pct_water", "none")) %>% 
+  ggplot(aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
+  geom_point(size = 2) +
+  scale_color_manual(values = col_pal) +
+  theme_bw() +
+  ylab('Difference from Best Performing Model') +
+  xlab('Start of Iteration') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=18))
+ggplotly(si_landuse_diff)
+
+ggplot(dat, aes(x = as.Date(date), y = area_pct_exotic_forest, color = 'exotic forest')) +
+  geom_line() +
+  geom_line(aes(x = as.Date(date), y = area_pct_forest_harvested, color = 'forest harvested')) +
+  geom_line(aes(x = as.Date(date), y = area_pct_hp_exotic_grassland, color = 'exotic grassland'))  +
+  geom_line(aes(x = as.Date(date), y = area_pct_manuka, color = 'manuka')) +
+  geom_line(aes(x = as.Date(date), y = area_pct_native_hardwood, color = 'native hardwood')) 
+
+
+
+
+colnames(dat)
