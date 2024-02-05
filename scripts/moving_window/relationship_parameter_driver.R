@@ -43,7 +43,14 @@ ggplot(data_long, aes(x = value, fill = as.factor(variable))) +
 ggplot(data_long, aes(x = value, y = tli_monthly, color = as.factor(variable))) +
   geom_point() +
   facet_wrap(~as.factor(variable), scales = 'free') +
-  geom_smooth()
+  geom_smooth() 
+
+ggplotly(ggplot(data_long, aes(x = value, y = tli_monthly)) +
+           geom_point() +
+           facet_wrap(~as.factor(variable), scales = 'free') +
+           geom_smooth() +
+           geom_point(aes(x = value, y = tli_monthly, color = as.factor(year(date))))
+)
 
 
 ## check correlations among variables
