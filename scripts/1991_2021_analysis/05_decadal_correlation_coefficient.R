@@ -50,11 +50,13 @@ for(i in 1:length(decades)){
     cor_df <- df %>% 
       filter(decade==decades[i]) %>% 
       select(-c(date, hydroyear, hydroyear_label, month, tli_annual, decade, 
-                year, soi_phase, TP_mgm3, TN_mgm3, chl_mgm3, secchi_m, temp_0))
+                year, soi_phase, TP_mgm3, TN_mgm3, chl_mgm3, secchi_m, temp_0,
+                de_trended_temp_anomaly))
   }else{
     cor_df <- df %>% 
       select(-c(date, hydroyear, hydroyear_label, month, tli_annual, decade, 
-                year, soi_phase, TP_mgm3, TN_mgm3, chl_mgm3, secchi_m, temp_0))
+                year, soi_phase, TP_mgm3, TN_mgm3, chl_mgm3, secchi_m, temp_0,
+                de_trended_temp_anomaly))
   }
   print(decades[i])
   print(nrow(cor_df))
@@ -104,10 +106,10 @@ vars_select <- vars_out %>%
 vars_select$variable <- factor(vars_select$variable, 
                                levels = c("DRP_mgm3", "NH4_mgm3", "temp_8",
                                           "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
-                                          "schmidt_stability", "de_trended_temp_anomaly"),
+                                          "schmidt_stability"),
                                labels = c("bottom DRP", "bottom NH4", "bottom water temp",
                                           "mean air temp", "min windspeed", "monthly water level", 
-                                          "schmidt stability", "temp anomaly"))
+                                          "schmidt stability"))
 
 p1 <- ggplot(vars_select, aes(x = decade, y = value, fill = variable)) +
   geom_col(position = 'dodge') +
