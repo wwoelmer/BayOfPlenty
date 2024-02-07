@@ -59,9 +59,8 @@ cor_df <- data_tf %>%
   select(tli_monthly, bottom_DRP_ugL:sum_alum) 
 cor_df <- na.omit(cor_df)
 
-cor(cor_df)
-
-colnames(data_tf)
+cor_out <- round(cor(cor_df), 2)
+write.csv(cor_out, './data/processed_data/moving_window/correlation_across_drivers.csv', row.names = FALSE)
 
 #####################################################################################
 # can we connect shifts in parameter values to changes in drivers?
