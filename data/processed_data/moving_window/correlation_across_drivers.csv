@@ -1,0 +1,10 @@
+,tli_monthly,bottom_DRP_ugL,bottom_NH4_ugL,temp_C_8,air_temp_mean,windspeed_min,monthly_avg_level_m,schmidt_stability,sum_alum
+tli_monthly,1,,,,,,,,
+bottom_DRP_ugL,0.51,1,,,,,,,
+bottom_NH4_ugL,0.43,0.68,1,,,,,,
+temp_C_8,0.27,0.43,0.39,1,,,,,
+air_temp_mean,0.29,0.48,0.43,0.97,1,,,,
+windspeed_min,-0.02,-0.08,-0.05,-0.16,-0.16,1,,,
+monthly_avg_level_m,-0.04,0,0.1,-0.12,-0.11,0.09,1,,
+schmidt_stability,0.09,0.47,0.45,0.52,0.6,-0.06,0.08,1,
+sum_alum,-0.17,-0.24,-0.06,0.01,-0.02,0.05,-0.03,-0.09,1
