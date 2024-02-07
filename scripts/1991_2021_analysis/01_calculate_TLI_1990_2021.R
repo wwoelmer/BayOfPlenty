@@ -161,7 +161,7 @@ dat_all <- dat_all %>%
 p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   geom_point(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear)), size = 2) +
   geom_line(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear))) +
-  geom_line(size = 1.5) +
+  #geom_line(size = 1.5) +
   theme_bw() +
   xlab('Date') +
   ylab('Trophic Level Index') +
@@ -171,7 +171,7 @@ p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   geom_hline(aes(yintercept = mean(tli_annual), linetype = 'Mean'))
 p1
 
-
+ggplotly(p1)
 mean(dat_all$tli_annual)
 
 ggsave('./figures/tli_timeseries.png', p1, dpi = 300, units = 'mm', height = 300, width = 500, scale = 0.5)
