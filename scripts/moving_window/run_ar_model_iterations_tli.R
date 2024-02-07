@@ -125,7 +125,8 @@ out$id_covar <- factor(out$id_covar,
                        labels = c("bottom DRP", "bottom NH4", "bottom water temp",
                                   "mean air temp", "min windspeed", "monthly water level", 
                                   "schmidt stability", "alum dosed", "none"))
-
+col_no <- length(unique(out$id_covar))
+col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 ################################################################################
 # look at R2 results
 r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
@@ -274,7 +275,7 @@ params <- out %>%
   labs(color = 'Covariate') +
   theme(text=element_text(size=15))
 
-params
+ggplotly(params)
 ggsave('./figures/moving_window/parameter_time_series.png', params, dpi = 300, units = 'mm', 
        height = 300, width = 550, scale = 0.4)
 
