@@ -137,7 +137,7 @@ r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)
   xlab('Start date of iteration (+100 obs)') +
   ylab('R2') +
   scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
+  labs(color = 'Driver')
 
 ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   geom_line() +
@@ -147,7 +147,7 @@ ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   xlab('Start date of iteration (+100 obs)') +
   ylab('R2') +
   scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate'))
+  labs(color = 'Driver'))
 r2_results
 
 ggsave('./figures/moving_window/r2_timeseries.png', r2_results,
@@ -172,7 +172,7 @@ diff_r2 <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, col
   theme_bw() +
   ylab('Difference from Best Performing Model') +
   xlab('Start of Iteration') +
-  labs(color = 'Covariate') +
+  labs(color = 'Driver') +
   theme(text=element_text(size=18))
 
 ggplotly(diff_r2)
@@ -187,7 +187,7 @@ diff_r2_panels <- ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(ra
   xlab('Start of Iteration') +
   theme(text=element_text(size=18)) +
   scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
+  labs(color = 'Driver')
 ggplotly(diff_r2_panels)
 
 ggsave('./figures/moving_window/r2_rank_timeseries.png', diff_r2_panels,
