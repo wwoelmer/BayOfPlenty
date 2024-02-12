@@ -3,6 +3,22 @@
 # through 1990's 
 data <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv')
 
+ggplot(data, aes(x = rain_sum, y = monthly_avg_level_m)) +
+  geom_point() 
+
+ggplot(data, aes(x = air_temp_mean, y = monthly_avg_level_m)) +
+  geom_point() 
+
+ggplot(data, aes(x = windspeed_mean, y = monthly_avg_level_m)) +
+  geom_point() 
+
+ggplot(data, aes(x = soi_3mth_mean, y = monthly_avg_level_m)) +
+  geom_point() +
+  geom_smooth()
+
+ggplot(data, aes(x = as.Date(date), y = soi_phase)) +
+  geom_point()
+
 # also add in the alum dosing data 
 al <- read.csv('./data/processed_data/alum_dosing_rotoehu_2011_2022.csv')
 al$date <- as.Date(al$date)
