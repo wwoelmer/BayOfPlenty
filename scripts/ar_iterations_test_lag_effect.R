@@ -1,4 +1,54 @@
 # test the effect of including only lag 1
+# run simple AR model for TLI + one covariate from each group
+
+library(tidyverse)
+library(MuMIn)
+library(tidymodels)
+library(plotly)
+library(RColorBrewer)
+library(patchwork)
+library(ggpubr)
+library(statcomp)
+
+
+# read in data
+#dat <- read.csv('./data/processed_data/BoP_wq_2007_2021.csv')
+dat <- read.csv('./data/master_rotoehu.csv')
+
+#calculate hydro year
+dat$hydroyear <- as.POSIXct(dat$date) + (184*60*60*24)
+dat$hydroyear <- format(dat$hydroyear,"%Y")
+dat$hydroyear <- as.numeric(dat$hydroyear)
+dat$hydroyear_label <- paste(dat$hydroyear-1, dat$hydroyear, sep = "-")
+
+
+# remove daily water level as it is similar ot monthly (see daily_vs_monthly_water_level_comparison.R)
+dat <- dat %>% 
+  select(-avg_level_m)
+
+
+# calculate monthly TLI
+source('./scripts/R/tli_fx.R')
+
+dat <- dat %>% 
+  group_by(month, year, lake, site) %>%
+  mutate(tli_monthly = tli_fx(chl = chla_ugL_INT, TN = top_TN_ugL, TP = top_TP_ugL, secchi = secchi_m)) %>% 
+  group_by(year, lake, site) %>%
+  mutate(tli_annual = tli_fx(chl = chla_ugL_INT, TN = top_TN_ugL, TP = top_TP_ugL, secchi = secchi_m))
+
+#######################################################
+# run the ar model simulation
+source('./scripts/R/run_ar.R')
+
+# this set of variables comes from the decadal analysis (90s, 2000s, 2010s) plus land cover, alum, and 'none'
+test_vars <- c("bottom_DRP_ugL", "bottom_NH4_ugL",
+               "temp_C_8", "air_temp_mean", "windspeed_min", 
+               "monthly_avg_level_m", 
+               "schmidt_stability", 
+               "sum_alum")
+
+id_var <- "tli_monthly"
+
 
 window_length <- 100
 n_iter <- seq(1, nrow(dat) - window_length)
@@ -29,87 +79,28 @@ for(i in 1:length(test_vars)){
   }
 }
 
-## define color palettes for the right number of variables
-col_no <- length(unique(out$id_covar))
+################################################################################
+# set up labels and levels of factor
+
+out$id_covar <- factor(out$id_covar, 
+                       levels = c("bottom_DRP_ugL", "bottom_NH4_ugL", "temp_C_8",
+                                  "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
+                                  "schmidt_stability", "sum_alum"),
+                       labels = c("bottom DRP", "bottom NH4", "bottom water temp",
+                                  "mean air temp", "min windspeed", "monthly water level", 
+                                  "schmidt stability", "alum dosed"))
+ col_no <- length(unique(out$id_covar)) + 1
 col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 
-
-
-ggplotly(ggplot(out, aes(x = iter_start, y = r2, color = id_covar)) +
+p <- ggplot(out, aes(x = iter_start, y = r2, color = id_covar)) +
            geom_point() +
            scale_color_manual(values = col_pal) +
            geom_line() +
-           theme_bw()) 
-
-out_prop <- out %>% 
-  distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
-  select(id_covar:iter_end, start_date, end_date, r2) %>% 
-  group_by(iter_start) %>% 
-  mutate(diff_from_best = max(r2) - r2,
-         rank = dense_rank(desc(r2)))
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
-  theme_bw() +
-  ylab('Difference from Best Performing Model') +
+           theme_bw() +
   xlab('Start of Iteration') +
-  labs(color = 'Covariate') +
-  theme(text=element_text(size=18))
+  labs(color = 'Driver') +
+  ylab('R2')
+p
 
-
-ggplot(out_prop, aes(x = as.Date(start_date), y = as.factor(rank), color = as.factor(id_covar))) +
-  geom_point() +
-  facet_wrap(~id_covar) +
-  theme_bw() +
-  ylab('Rank') +
-  xlab('Start of Iteration') +
-  theme(text=element_text(size=12)) +
-  scale_color_manual(values = col_pal) +
-  labs(color = 'Covariate')
-
-ggplot(out_prop, aes(x = as.factor(id_covar), y = rank, fill = as.factor(id_covar), color = as.factor(id_covar))) +
-  geom_boxplot() + 
-  theme_bw() +
-  scale_fill_manual(values = col_pal) +
-  scale_color_manual(values = col_pal) +
-  theme(text=element_text(size=14),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)) 
-
-ggplot(out_prop, aes(y = rank, fill = as.factor(id_covar), color = as.factor(id_covar))) +
-  geom_histogram() + 
-  theme_bw() +
-  facet_wrap(~id_covar) +
-  scale_fill_manual(values = col_pal) +
-  scale_color_manual(values = col_pal) +
-  theme(text=element_text(size=14),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)) 
-
-out_rank <- plyr::ddply(out_prop, c("id_covar", "rank"), \(x) {
-  print(unique(x$id_covar))
-  print(unique(x$rank))
-  n <- nrow(x)
-  pct <- round(n/length(unique(out_prop$iter_start)),3)*100
-  return(data.frame(pct = pct))
-})
-
-
-# define colors for the right number of ranks
-## define color palettes for the right number of variables
-num_ranks <- length(unique(out_rank$rank))
-rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
-
-out_rank <- out_rank %>% 
-  group_by(rank) %>% 
-  arrange(pct)
-
-rank <- ggplot(out_rank, aes(x = reorder(id_covar, rank), y = pct, fill = fct_rev(as.factor(rank)))) +
-  geom_bar(stat = 'identity') +
-  scale_fill_manual(values = rank_pal) +
-  theme_bw() +
-  ylab('Percent of time') +
-  xlab('Covariate') +
-  labs(fill = 'Rank') +
-  theme(text=element_text(size=14),
-        axis.text.x = element_text(angle = 90, vjust = 0.5)) 
-rank
+ggsave('./figures/moving_window/r2_timeseries_1lag.png', p,
+       dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.4)
