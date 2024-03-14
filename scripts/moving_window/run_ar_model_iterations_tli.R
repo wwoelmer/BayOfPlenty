@@ -1,4 +1,4 @@
-# run simple AR model for TLI + one covariate from each group
+# run simple AR model for TLI + one covariate from set of potential driver variables
 # with groups defined as climatic, (air temp, rainfall, windspeed)
 #                       anthropogenic, (land use change, alum dosing)
 #                       climatic*anthropogenic interaction, (discharge, nutrient load)
@@ -135,9 +135,10 @@ r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)
   theme_bw() +
   theme(text=element_text(size=18)) +
   xlab('Start date of iteration (+100 obs)') +
-  ylab('R2') +
+  ylab(bquote(~R^2)) +
   scale_color_manual(values = col_pal) +
   labs(color = 'Driver')
+r2_results
 
 ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   geom_line() +
@@ -148,7 +149,6 @@ ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   ylab('R2') +
   scale_color_manual(values = col_pal) +
   labs(color = 'Driver'))
-r2_results
 
 ggsave('./figures/moving_window/r2_timeseries.png', r2_results,
        dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.4)
