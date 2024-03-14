@@ -167,8 +167,8 @@ p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   ylab('Trophic Level Index') +
   labs(color = 'Year',
        linetype = '') +
-  theme(text = element_text(size = 14)) +
-  geom_hline(aes(yintercept = mean(tli_annual), linetype = 'Mean'))
+  theme(text = element_text(size = 14)) #+
+  #geom_hline(aes(yintercept = mean(tli_annual), linetype = 'Mean'))
 p1
 
 ggplotly(p1)
