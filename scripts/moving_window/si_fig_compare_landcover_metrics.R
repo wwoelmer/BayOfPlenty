@@ -53,7 +53,7 @@ dat %>%
 
 
 # plot all land use vars to see which have changed
-dat %>% 
+lu <- dat %>% 
   select(c("date", "area_pct_aq_vegetation", "area_pct_decid_hardwood","area_pct_exotic_forest",
            "area_pct_forest_harvested", "area_pct_gorse", "area_pct_hp_exotic_grassland",
            "area_pct_manuka", "area_pct_native_forest", "area_pct_native_hardwood",    
@@ -64,7 +64,10 @@ dat %>%
   xlab('Date') +
   ylab('Percent of Catchment') +
   theme_bw()
+lu
 
+ggsave('./figures/moving_window/si_fig_landuse_data.png', 
+       lu, dpi = 300, units = 'mm', height = 300, width = 500, scale = 0.4)
 #######################################################
 # run the ar model simulation
 source('./scripts/R/run_ar.R')
