@@ -1,4 +1,5 @@
 # time series of driver data
+library(ggpomological)
 
 # through 1990's 
 data <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv')
@@ -52,7 +53,7 @@ data <- left_join(data, al_sum, by = 'date')
 
 select_vars <-  c("DRP_mgm3", "NH4_mgm3", "temp_8",
                   "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
-                  "schmidt_stability", "de_trended_temp_anomaly", "sum_alum")
+                  "schmidt_stability", "sum_alum")
 
 data_long <- data %>% 
   filter(decade!=2020) %>% 
