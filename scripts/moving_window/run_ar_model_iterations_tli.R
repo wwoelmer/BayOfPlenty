@@ -18,6 +18,9 @@ library(statcomp)
 #dat <- read.csv('./data/processed_data/BoP_wq_2007_2021.csv')
 dat <- read.csv('./data/master_rotoehu.csv')
 
+mean_secchi <- mean(dat$secchi_m, na.rm = TRUE)
+mean_secchi
+
 #calculate hydro year
 dat$hydroyear <- as.POSIXct(dat$date) + (184*60*60*24)
 dat$hydroyear <- format(dat$hydroyear,"%Y")
