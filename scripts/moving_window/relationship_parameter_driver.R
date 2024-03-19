@@ -42,9 +42,9 @@ ggplot(data_long, aes(x = value, fill = as.factor(variable))) +
   geom_histogram() +
   facet_wrap(~as.factor(variable), scales = 'free') 
   
-ggplot(data_long, aes(x = value, y = tli_monthly, color = as.factor(variable))) +
+ggplot(data_long, aes(x = value, y = tli_monthly, color = as.factor(year(date)))) +
   geom_point() +
-  facet_wrap(~as.factor(variable), scales = 'free') +
+  facet_wrap(~as.factor(variable), scales = 'free') #+
   geom_smooth() 
 
 ggplot(data_long, aes(x = as.Date(date), y = value, color = as.factor(variable))) +
@@ -122,15 +122,15 @@ x <- left_join(coef, summ, by = c('start_date', 'covar'))
 ggplot(x[x$summary=='mean',], aes(x = value, y = param_value, color = as.factor(year(start_date)))) + 
   geom_point() +
   facet_wrap(~covar, scales = 'free') +
-  geom_smooth() +
+#  geom_smooth() +
   ylab('Parameter Value') +
   xlab('Mean driver value') +
   ggtitle('Mean value of driver time series')
 
-ggplot(x[x$summary=='min',], aes(x = value, y = param_value, color = (covar))) + 
+ggplot(x[x$summary=='min',], aes(x = value, y = param_value, color = as.factor(year(start_date)))) + 
   geom_point() +
   facet_wrap(~covar, scales = 'free') +
-  geom_smooth() +
+#  geom_smooth() +
   ylab('Parameter Value') +
   xlab('Minimum driver value') +
   ggtitle('Min value of driver time series')
@@ -138,12 +138,12 @@ ggplot(x[x$summary=='min',], aes(x = value, y = param_value, color = (covar))) +
 ggplot(x[x$summary=='max',], aes(x = value, y = param_value, color = (covar))) + 
   geom_point() +
   facet_wrap(~covar, scales = 'free') +
-  geom_smooth() +
+#  geom_smooth() +
   ylab('Parameter Value') +
   xlab('Maximum driver value') +
   ggtitle('Max value of driver time series')
 
-ggplot(x[x$summary=='cv',], aes(x = value, y = param_value, color = as.factor(covar))) + 
+ggplot(x[x$summary=='cv',], aes(x = value, y = param_value, color = as.factor(year(start_date)))) + 
   geom_point() +
   facet_wrap(~covar, scales = 'free') +
   geom_smooth() +
