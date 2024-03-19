@@ -161,7 +161,7 @@ dat_all <- dat_all %>%
 p1 <- ggplot(dat_all, aes(x = as.Date(date), y = tli_annual)) +
   geom_point(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear)), size = 2) +
   geom_line(aes(x = as.Date(date), y = tli_monthly, color = as.factor(hydroyear))) +
-  #geom_line(size = 1.5) +
+  geom_line(size = 1.5) +
   theme_bw() +
   xlab('Date') +
   ylab('Trophic Level Index') +
