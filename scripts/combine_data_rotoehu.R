@@ -24,6 +24,18 @@ wq <- wq %>%
          month = month(date)) 
 wq$category <- NA
 
+##################################################################
+# temp and thermal stratification metrics
+temp <- read.csv('./data/processed_data/90s_data/temp_metrics_rotoehu_90s.csv')
+temp <- temp %>% 
+  select(-X) %>% 
+  mutate(month = month(date)) 
+temp$date <- as.POSIXct(temp$date)
+temp <- yr_to_hydro_yr(temp)
+temp$month <- as.integer(temp$month)
+temp <- temp %>% select(-date, -hydroyear_label) %>% 
+  distinct(hydroyear, month, .keep_all = TRUE)
+
 ###########################
 # ctd data
 ctd <- read.csv('./data/processed_data/BoP_ctd_2003_2022.csv')
