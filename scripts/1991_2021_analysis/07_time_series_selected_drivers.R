@@ -1,24 +1,9 @@
 # time series of driver data
+library(tidyverse)
 library(ggpomological)
 
 # through 1990's 
 data <- read.csv('./data/processed_data/90s_data/rotoehu_tli_drivers_1990_2021.csv')
-
-ggplot(data, aes(x = rain_sum, y = monthly_avg_level_m)) +
-  geom_point() 
-
-ggplot(data, aes(x = air_temp_mean, y = monthly_avg_level_m)) +
-  geom_point() 
-
-ggplot(data, aes(x = windspeed_mean, y = monthly_avg_level_m)) +
-  geom_point() 
-
-ggplot(data, aes(x = soi_3mth_mean, y = monthly_avg_level_m)) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(data, aes(x = as.Date(date), y = soi_phase)) +
-  geom_point()
 
 # also add in the alum dosing data 
 al <- read.csv('./data/processed_data/alum_dosing_rotoehu_2011_2022.csv')
@@ -63,10 +48,10 @@ data_long <- data %>%
 data_long$variable <- factor(data_long$variable, 
                              levels = c("DRP_mgm3", "NH4_mgm3", "temp_8",
                                         "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
-                                        "schmidt_stability", "de_trended_temp_anomaly", "sum_alum"),
+                                        "schmidt_stability", "sum_alum"),
                              labels = c("bottom DRP", "bottom NH4", "bottom water temp",
                                         "mean air temp", "min windspeed", "monthly water level", 
-                                        "schmidt stability", "temp anomaly", "alum dosed"))
+                                        "schmidt stability", "alum dosed"))
 
 p1 <- ggplot(data_long, aes(x = as.Date(date), y = value, color = as.factor(decade))) +
   geom_point() +
