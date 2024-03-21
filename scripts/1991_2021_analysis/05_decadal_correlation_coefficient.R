@@ -135,10 +135,10 @@ df_vars_sig <- df_long %>%
 df_vars_sig$variable <- factor(df_vars_sig$variable, 
                                levels = c("DRP_mgm3", "NH4_mgm3", "temp_8",
                                           "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
-                                          "schmidt_stability", "de_trended_temp_anomaly"),
+                                          "schmidt_stability"),
                                labels = c("bottom DRP", "bottom NH4", "bottom water temp",
                                           "mean air temp", "min windspeed", "monthly water level", 
-                                          "schmidt stability", "temp anomaly"))
+                                          "schmidt stability"))
 
 p2 <- ggplot(df_vars_sig, aes(x = as.factor(decade), y = value, fill = as.factor(decade))) +
   geom_boxplot() +
