@@ -121,5 +121,5 @@ df <- df %>%
 
 ###########################################################################################
 # save file as csv
-write.csv(df, './data/processed_data/BoP_ctd_2003_2022.csv', row.names = FALSE)
+write.csv(df, './data/moving_window_analysis_cross_lake/BoP_ctd_2003_2022.csv', row.names = FALSE)
 
