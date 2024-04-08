@@ -48,6 +48,12 @@ df_clean <- df %>%
 ggplot(df_clean, aes(x = as.Date(date), y = value, color = as.factor(depth))) +
   geom_point() +
   facet_wrap(~variable, scales = 'free')
+
+############################################# 
+## fix the few samples in Rotoehu where no bottom is assigned
+df_clean <- df_clean %>% 
+  group_by(lake, site, date, variable) %>% 
+  mutate(depth = ifelse(lake=='Rotoehu' & depthfrom > 2.6, 'bottom', depth))
   
 df_clean <- df_clean %>% 
   mutate(pct_depth_diff = abs(max_depth - depthfrom)/max_depth)
