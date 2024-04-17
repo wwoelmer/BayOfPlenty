@@ -53,7 +53,10 @@ ggplot(df_clean, aes(x = as.Date(date), y = value, color = as.factor(depth))) +
 ## fix the few samples in Rotoehu where no bottom is assigned
 df_clean <- df_clean %>% 
   group_by(lake, site, date, variable) %>% 
-  mutate(depth = ifelse(lake=='Rotoehu' & depthfrom > 2.6, 'bottom', depth))
+  mutate(depth2 = ifelse(lake=='Rotoehu' & depthfrom > 2.6 & variable!='SecchiDepth (m)', 'bottom', depth),
+         depth3 = ifelse(is.na(depthfrom), depth, depth2)) %>% 
+  select(-depth, -depth2) %>% 
+  rename(depth = depth3)
   
 df_clean <- df_clean %>% 
   mutate(pct_depth_diff = abs(max_depth - depthfrom)/max_depth)
@@ -71,6 +74,7 @@ df_wide <- df_clean %>%
   group_by(lake, site, date, variable, depth) %>% 
   summarise(value = mean(value, na.rm = TRUE)) %>% 
   pivot_wider(names_from = c(variable, depth), values_from = value)
+
 
 # rename the variable columns to follow good naming convention
 colnames(df_wide) <- c("lake", "site", "date", "chla_mgm3_top", "DRP_mgm3_bottom", "DRP_mgm3_top", 
