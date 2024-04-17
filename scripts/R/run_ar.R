@@ -15,21 +15,21 @@ run_ar <- function(data, id_var, id_covar, window_length = 99, lag_id = TRUE){
     #pacf(x, plot = TRUE)
     #acf(x, plot = TRUE)
     r <- pacf(x, plot = FALSE)$acf
-    lag_id <- which(abs(r) >= qnorm(1 - 0.05 / 2) / sqrt(nrow(x))) 
-    lag_id
+    lag_save <- which(abs(r) >= qnorm(1 - 0.05 / 2) / sqrt(length(x))) 
+    lag_save
     
   }else{
-    lag_id <- 1
+    lag_save <- 1
   }
-  print(lag_id)
+  #print(lag_save)
   #### create df with the significant lags
-  newcols <- paste0("tli_lag_", lag_id)
+  newcols <- paste0("tli_lag_", lag_save)
   sampdf <- data.frame(matrix(ncol = length(newcols), nrow = nrow(data)))
   colnames(sampdf) <- newcols
   newdf <- cbind(data, sampdf)
   
-  for(i in 1:length(lag_id)){
-    newdf[, ncol(data) + i] <- lag(data[,id_var], n = lag_id[i])
+  for(i in 1:length(lag_save)){
+    newdf[, ncol(data) + i] <- lag(data[,id_var], n = lag_save[i])
   }
   
   # remove NA's for AR modeling
@@ -39,7 +39,7 @@ run_ar <- function(data, id_var, id_covar, window_length = 99, lag_id = TRUE){
   
   # setup some names
   `%notin%` <- Negate(`%in%`)
-  extras <- c('date', id_var)
+  extras <- c('date', id_var, 'lake')
   drivers_selected <- names(newdf)[names(newdf)%notin%extras]
   
   fml_selected <- as.formula(paste0(id_var, " ~ ", paste(drivers_selected, collapse= "+")))
