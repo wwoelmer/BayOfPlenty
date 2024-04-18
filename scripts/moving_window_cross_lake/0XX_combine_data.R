@@ -125,7 +125,13 @@ df4 %>%
 mix <- read.csv('./data/moving_window_analysis_cross_lake/BoP_mix_index_2003_2022.csv')
 mix$date <- as.Date(mix$date)
 mix <- mix %>% 
-  select(-windspeed, -depth_m, -temp_C)
+  select(-windspeed, -depth_m, -temp_C) 
+
+# get rid of site 2 for rotorua and only site 3 for rotoiti
+mix <- mix %>% 
+  filter(!(lake=='Rotorua' & site==2)) %>% 
+  filter(!(lake=='Rotoiti' & site!=3))
+unique(paste0(mix$lake, mix$site))
 
 df5 <- left_join(df4, mix, by = c('date', 'lake'))
 ################################################################################
@@ -199,4 +205,8 @@ df6 %>%
   ylab('Annual TLI')
 
 #################################################################################
+# remove the site variable
+df6 <- df6 %>% 
+  select(-site)
+
 write.csv(df6, './data/moving_window_analysis_cross_lake/all_lakes_TLI_drivers.csv', row.names = FALSE)
