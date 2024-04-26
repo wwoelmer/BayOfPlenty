@@ -31,15 +31,16 @@ bthA <- bty$model_sd_m2
 bthD <- bty$depth_m
 
 # and wind
-met <- read.csv('./data/raw_data/rotoehu_era5_1999_2021.csv')
-met <- met %>% 
-  mutate(windspeed = sqrt(MET_wnduvu^2 + MET_wnduvv^2)) %>% 
-  select(Date, windspeed) %>% 
-  rename(date = Date)
+met_okaro <- read.csv('./data/moving_window_analysis_cross_lake/met_data/okaro_met_1980_2023.csv')
+met_rotoehu <- read.csv('./data/moving_window_analysis_cross_lake/met_data/rotoehu_met_1980_2023.csv')
+met_rotorua <- read.csv('./data/moving_window_analysis_cross_lake/met_data/rotorua_met_1980_2023.csv')
+met_tarawera <- read.csv('./data/moving_window_analysis_cross_lake/met_data/tarawera_met_1980_2023.csv')
+
+met <- rbind(met_okaro, met_rotoehu, met_rotorua, met_tarawera)
 met$date <- as.Date(met$date)
 
 # merge wind into ctd dataframe
-ctd <- left_join(ctd, met, by = 'date')
+ctd <- left_join(ctd, met, by = c('date', 'lake'))
 
 # calculate a bunch of mixing metrics
 t_metrics <- ctd %>% 
