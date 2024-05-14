@@ -3,7 +3,7 @@ library(tidyverse)
 library(zoo)
 
 
-lakes <- c('Okaro', 'Tarawera', 'Rotorua', 'Rotoehu')
+lakes <- c('Okaro', 'Tarawera', 'Rotorua', 'Rotoehu', 'Okareka', 'Rerewhakaaitu')
 
 ################################################################################
 # water quality monitoring data
@@ -19,7 +19,7 @@ wq <- wq %>%
 
 ggplot(wq, aes(x = as.Date(date), y = DRP_mgm3_bottom, color = site)) +
   geom_point() +
-  facet_wrap(~lake, scales = 'free')
+  facet_wrap(~lake)
 
 #select the variables I want to keep for the moving window analysis
 wq <- wq %>% 
@@ -66,14 +66,22 @@ df <- left_join(wq, ctd_tb, by = c('lake', 'date'))
 
 ##### NOTE ########
 # using only rotoehu met data as a filler for now, waiting to get ERA5 for all lakes
-met <- read.csv('./data/processed_data/Rotoehu_met_1980_2022.csv')
-met$date <- as.Date(met$date)
+met <- read.csv('./data/moving_window_analysis_cross_lake/met_data/met_summaries_cross_lake.csv')
 
-##### REMOVE LAKE NAME FOR NOW?
-met <- met %>% select(-lake)
+# capitlize months
+met$lake <- str_to_title(met$lake)
+unique(met$lake)
+
+df <- df %>% 
+  mutate(year = year(date),
+         month = month(date))
 
 # combine met with other data
-df2 <- left_join(df, met, by = 'date')
+df2 <- left_join(df, met, by = c('month', 'year', 'lake')) %>% 
+  select(-c(year, month))
+
+ggplot(df2, aes(x = as.Date(date), y = rain_sum, color = lake)) +
+  geom_point()
 
 ################################################################################
 ## add in alum data #######
@@ -134,6 +142,14 @@ mix <- mix %>%
 unique(paste0(mix$lake, mix$site))
 
 df5 <- left_join(df4, mix, by = c('date', 'lake'))
+
+#################################################################################
+## add in Kd
+kd <- read.csv('./data/moving_window_analysis_cross_lake/light_extinction_kd.csv')
+kd$date <- as.Date(kd$date)
+
+df5 <- left_join(df5, kd, by = c('date', 'lake'))
+
 ################################################################################
 # remove NA's and interpolate?????
 # interpolate missing data
@@ -185,9 +201,9 @@ df6 <- df5 %>%
   mutate(tli_annual = tli_fx(chl = chla_mgm3_top, TN = TN_mgm3_top, TP = TP_mgm3_top, secchi = secchi_m))
 
 hist(df6$tli_monthly)
-tli <- ggplot(df6, aes(x = as.Date(date), y = tli_monthly)) +
+tli <- ggplot(df6, aes(x = as.Date(date), y = tli_monthly,  color = lake)) +
   geom_point(linewidth = 1.2) +
-  facet_wrap(~lake) +
+#  facet_wrap(~lake) +
   geom_line(aes(x = as.Date(date), y = tli_annual), size = 2) +
   theme_bw()
 tli
@@ -210,3 +226,24 @@ df6 <- df6 %>%
   select(-site)
 
 write.csv(df6, './data/moving_window_analysis_cross_lake/all_lakes_TLI_drivers.csv', row.names = FALSE)
+
+
+##################################################################################
+# calculate normalized drivers for comparison across lakes
+df_norm <- df6 %>% 
+  select(-c(note, strat, month, year)) %>% 
+  pivot_longer(DRP_mgm3_bottom:Kd, names_to = 'variable', values_to = 'value') %>% 
+  group_by(lake, variable) %>% 
+  mutate(min = min(value, na.rm = TRUE),
+         max = max(value, na.rm = TRUE),
+         value_norm = (value - min)/(max - min))
+
+ggplot(df_norm, aes(x = as.Date(date), y = value_norm, color = lake)) +
+  geom_point() +
+  facet_wrap(~variable, scales = 'free')
+
+df7 <- df_norm %>% 
+  select(-value, -min, -max) %>% 
+  pivot_wider(names_from = 'variable', values_from = 'value_norm')
+
+write.csv(df7, './data/moving_window_analysis_cross_lake/all_lakes_TLI_normalized_drivers.csv', row.names = FALSE)
