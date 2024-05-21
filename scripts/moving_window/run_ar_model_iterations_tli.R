@@ -167,7 +167,8 @@ out_prop <- out %>%
   mutate(diff_from_best = max(r2) - r2,
          rank = dense_rank(desc(r2)),
          r2_none = r2[id_covar=='none'],
-         diff_from_none = r2 - r2_none)
+         diff_from_none = r2 - r2_none,
+         rank_AR = dense_rank(desc(diff_from_none)))
 
 diff_r2 <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
   geom_point(size = 2) +
@@ -216,7 +217,7 @@ ggplotly(ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color
   labs(color = 'Covariate') +
   theme(text=element_text(size=18)))
 
-ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
+diff_none <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_covar)) +
   geom_point() +
   scale_color_manual(values = col_pal) +
   theme_bw() +
@@ -227,13 +228,16 @@ ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none, color = id_cov
   labs(color = 'Covariate') +
   theme(text=element_text(size=18))
 
+ggsave('./figures/moving_window/r2_diff_from_none.png', diff_none,
+       dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.4)
+
 ################################################################################
 # rank variables based on differences
 
 out_prop <- out_prop %>% 
-  select(id_covar:rank)
+  select(id_covar:rank_AR)
 
-out_rank <- plyr::ddply(out_prop, c("id_covar", "rank"), \(x) {
+out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR"), \(x) {
   n <- nrow(x)
   pct <- round(n/length(unique(out_prop$iter_start))*100)
   return(data.frame(pct = pct))
@@ -246,12 +250,12 @@ num_ranks <- length(unique(out_rank$rank))
 rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
 
 out_rank <- out_rank %>% 
-  group_by(rank) %>% 
+  group_by(rank_AR) %>% 
   arrange(pct) %>% 
   group_by(id_covar) %>% 
-  mutate(sum = sum(pct*rank))
+  mutate(sum = sum(pct*rank_AR))
 
-rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev(as.factor(rank)))) +
+rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev(as.factor(rank_AR)))) +
   geom_bar(stat = 'identity') +
   scale_fill_manual(values = rank_pal) +
   theme_bw() +
