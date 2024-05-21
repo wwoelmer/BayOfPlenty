@@ -1,2 +1,7 @@
 water_level_all_lakes.csv
 BoP_ctd_2003_2022.csv
+model_output_all_lakes.csv
+light_extinction_kd.csv
+all_lakes_TLI_drivers.csv
+BoP_mix_index_2003_2022.csv
+all_lakes_TLI_normalized_drivers.csv
