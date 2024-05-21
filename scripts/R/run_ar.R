@@ -21,47 +21,98 @@ run_ar <- function(data, id_var, id_covar, window_length = 99, lag_id = TRUE){
   }else{
     lag_save <- 1
   }
-  #print(lag_save)
-  #### create df with the significant lags
-  newcols <- paste0("tli_lag_", lag_save)
-  sampdf <- data.frame(matrix(ncol = length(newcols), nrow = nrow(data)))
-  colnames(sampdf) <- newcols
-  newdf <- cbind(data, sampdf)
   
-  for(i in 1:length(lag_save)){
-    newdf[, ncol(data) + i] <- lag(data[,id_var], n = lag_save[i])
+  if(length(lag_save) > 1){
+    #print(lag_save)
+    #### create df with the significant lags
+    newcols <- paste0("tli_lag_", lag_save)
+    sampdf <- data.frame(matrix(ncol = length(newcols), nrow = nrow(data)))
+    colnames(sampdf) <- newcols
+    newdf <- cbind(data, sampdf)
+    
+    for(i in 1:length(lag_save)){
+      newdf[, ncol(data) + i] <- lag(data[,id_var], n = lag_save[i])
+    }
+    
+    # remove NA's for AR modeling
+    newdf <- na.omit(newdf)
+    
+    ##### create model with all lags and id_covar
+    
+    # setup some names
+    `%notin%` <- Negate(`%in%`)
+    extras <- c('date', id_var, 'lake')
+    drivers_selected <- names(newdf)[names(newdf)%notin%extras]
+    
+    fml_selected <- as.formula(paste0(id_var, " ~ ", paste(drivers_selected, collapse= "+")))
+    fml_selected
+    
+    # run the model and store outputs
+    m1 <- lm(fml_selected, data = newdf)
+    summary(m1)
+    summ <- summary(m1)
+    r2 <- summ$adj.r.squared
+    covars <- summ$coefficients
+    aic <- AICc(m1)
+    
+    # rearrange and write outputs to file
+    covars <- as.data.frame(covars)
+    covars <- rownames_to_column(covars, var = 'covar')
+    colnames(covars) <- c('covar', 'value', 'std_error', 't_value', 'p_value')
+    
+    covars$id_covar <- id_covar
+    covars$covar <- gsub("[()]", "", covars$covar)
+    covars$aic <- aic
+    covars$r2 <- r2
+    covars$sig_lags <- 1 # record whether or not there were significant PACF lags (0 = no, 1 = yes)
+    
+  }else{
+    print('no significant lags, assign 1 lag')
+    lag_save <- 1
+    
+    newcols <- paste0("tli_lag_", lag_save)
+    sampdf <- data.frame(matrix(ncol = length(newcols), nrow = nrow(data)))
+    colnames(sampdf) <- newcols
+    newdf <- cbind(data, sampdf)
+    
+    for(i in 1:length(lag_save)){
+      newdf[, ncol(data) + i] <- lag(data[,id_var], n = lag_save[i])
+    }
+    
+    # remove the first NA for AR modeling
+    newdf <- newdf[-1,]
+    
+    ##### create model with all lags and id_covar
+    
+    # setup some names
+    `%notin%` <- Negate(`%in%`)
+    extras <- c('date', id_var, 'lake')
+    drivers_selected <- names(newdf)[names(newdf)%notin%extras]
+    
+    fml_selected <- as.formula(paste0(id_var, " ~ ", paste(drivers_selected, collapse= "+")))
+    fml_selected
+    
+    # run the model and store outputs
+    m1 <- lm(fml_selected, data = newdf)
+    summary(m1)
+    summ <- summary(m1)
+    r2 <- summ$adj.r.squared
+    covars <- summ$coefficients
+    aic <- AICc(m1)
+    
+    # rearrange and write outputs to file
+    covars <- as.data.frame(covars)
+    covars <- rownames_to_column(covars, var = 'covar')
+    colnames(covars) <- c('covar', 'value', 'std_error', 't_value', 'p_value')
+    
+    covars$id_covar <- id_covar
+    covars$covar <- gsub("[()]", "", covars$covar)
+    covars$aic <- aic
+    covars$r2 <- r2
+    covars$sig_lags <- 0 # record whether or not there were significant PACF lags (0 = no, 1 = yes)
   }
   
-  # remove NA's for AR modeling
-  newdf <- na.omit(newdf)
   
-  ##### create model with all lags and id_covar
-  
-  # setup some names
-  `%notin%` <- Negate(`%in%`)
-  extras <- c('date', id_var, 'lake')
-  drivers_selected <- names(newdf)[names(newdf)%notin%extras]
-  
-  fml_selected <- as.formula(paste0(id_var, " ~ ", paste(drivers_selected, collapse= "+")))
-  fml_selected
-  
-  # run the model and store outputs
-  m1 <- lm(fml_selected, data = newdf)
-  summary(m1)
-  summ <- summary(m1)
-  r2 <- summ$adj.r.squared
-  covars <- summ$coefficients
-  aic <- AICc(m1)
-  
-  # rearrange and write outputs to file
-  covars <- as.data.frame(covars)
-  covars <- rownames_to_column(covars, var = 'covar')
-  colnames(covars) <- c('covar', 'value', 'std_error', 't_value', 'p_value')
-  
-  covars$id_covar <- id_covar
-  covars$covar <- gsub("[()]", "", covars$covar)
-  covars$aic <- aic
-  covars$r2 <- r2
   
   # some visual diagnostics
 #  pred_train <- predict(m1, newdata = newdf)
