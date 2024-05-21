@@ -49,7 +49,7 @@ ctd_long <- ctd %>%
   mutate(max_depth = max(depth_m)) %>% 
   group_by(lake, date, variable) %>% 
   mutate(bottom = value[which.max(depth_m)],
-         top = value[which.min(depth_m)]) %>% 
+         top = value[which.min(depth_m) + 1]) %>% 
   distinct(lake, date, variable, .keep_all = TRUE)
 
 ctd_tb <- ctd_long %>% 
@@ -148,7 +148,7 @@ df5 <- left_join(df4, mix, by = c('date', 'lake'))
 kd <- read.csv('./data/moving_window_analysis_cross_lake/light_extinction_kd.csv')
 kd$date <- as.Date(kd$date)
 
-df5 <- left_join(df5, kd, by = c('date', 'lake'))
+df5 <- left_join(df5, kd, by = c('date', 'lake', 'site'))
 
 ################################################################################
 # remove NA's and interpolate?????
@@ -245,5 +245,14 @@ ggplot(df_norm, aes(x = as.Date(date), y = value_norm, color = lake)) +
 df7 <- df_norm %>% 
   select(-value, -min, -max) %>% 
   pivot_wider(names_from = 'variable', values_from = 'value_norm')
+
+
+# look at a few variables
+df7 %>% 
+  select(date, lake, DRP_mgm3_bottom, epi_temp, Kd, thermo_depth) %>% 
+  pivot_longer(DRP_mgm3_bottom:thermo_depth, names_to = 'variable', values_to= 'value') %>% 
+  ggplot(aes(x = as.Date(date), y = value, color = lake)) +
+  geom_point() +
+  facet_wrap(~variable, scales = 'free')
 
 write.csv(df7, './data/moving_window_analysis_cross_lake/all_lakes_TLI_normalized_drivers.csv', row.names = FALSE)
