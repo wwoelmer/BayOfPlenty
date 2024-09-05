@@ -1,11 +1,4 @@
-#dat_90s <- dat_90s %>% 
-#  mutate(tli = tli_fx(chl = chl_mgm3, TN = TN_mgm3, TP = TP_mgm3, secchi = secchi_m))
 
-#chl <- dat_90s$chl_mgm3
-#TN <- dat_90s$TN_mgm3
-#TP <- dat_90s$TP_mgm3
-#secchi <- dat_90s$secchi_m
-#timescale <- 'annual'
 
 tli_fx <- function(chl, TN, TP, secchi, timescale = 'annual'){
   if(timescale=='annual'){
@@ -26,8 +19,4 @@ tli_fx <- function(chl, TN, TP, secchi, timescale = 'annual'){
   return(tli_all)
 }
 
-#tli_fx(chl = dat_90s$chl_mgm3,
-#       TN = dat_90s$TN_mgm3,
-#       TP = dat_90s$TP_mgm3,
-#       secchi = dat_90s$secchi_m,
-#       timescale = 'monthly')
+
