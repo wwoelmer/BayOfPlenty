@@ -1,0 +1,102 @@
+# calculate model rank
+library(tidyverse)
+library(RColorBrewer)
+
+out <- read.csv('./data/processed_data/moving_window/model_output.csv')
+################################################################################
+# set up labels and levels of factor
+
+out$id_covar <- factor(out$id_covar, 
+                       levels = c("bottom_DRP_ugL", "bottom_NH4_ugL", "temp_C_8",
+                                  "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
+                                  "schmidt_stability", "sum_alum", "none"),
+                       labels = c("bottom DRP", "bottom NH4", "bottom water temp",
+                                  "mean air temp", "min windspeed", "monthly water level", 
+                                  "schmidt stability", "alum dosed", "none"))
+################################################################################
+# calculate the difference across variables
+out_prop <- out %>% 
+  distinct(id_covar, iter_start, .keep_all = TRUE) %>% 
+  select(id_covar:iter_end, start_date, end_date, r2) %>% 
+  group_by(iter_start) %>% 
+  mutate(diff_from_best = max(r2) - r2,
+         rank = dense_rank(desc(r2)),
+         r2_none = r2[id_covar=='none'],
+         diff_from_none = r2 - r2_none,
+         rank_AR = dense_rank(desc(diff_from_none)),
+         aic_none = aic[id_covar=='none'],
+         diff_from_none_aic = aic - aic_none,
+         rank_aic = dense_rank(desc(diff_from_none_aic*-1))) 
+                  #multiply by -1 to change the sign so positive is good for ranking purposes
+
+
+################################################################################
+# rank variables based on differences in R2 and AICc
+
+out_prop_AR <- out_prop %>% 
+  select(id_covar:rank_AR)
+
+out_rank <- plyr::ddply(out_prop_AR, c("id_covar", "rank_AR"), \(x) {
+  n <- nrow(x)
+  pct <- round(n/length(unique(out_prop$iter_start))*100)
+  return(data.frame(pct = pct))
+})
+
+
+# define colors for the right number of ranks
+## define color palettes for the right number of variables
+num_ranks <- length(unique(out_rank$rank_AR))
+rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
+
+out_rank <- out_rank %>% 
+  group_by(rank_AR) %>% 
+  arrange(pct) %>% 
+  group_by(id_covar) %>% 
+  mutate(sum_r2 = sum(pct*rank_AR))
+
+rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum_r2), y = pct, fill = fct_rev(as.factor(rank_AR)))) +
+  geom_bar(stat = 'identity') +
+  scale_fill_manual(values = rank_pal) +
+  theme_bw() +
+  ylab('Percent of time') +
+  xlab('Covariate') +
+  labs(fill = 'Rank') +
+  theme(text=element_text(size=14),
+        axis.text.x = element_text(angle = 45, vjust = 0.55)) 
+rank
+ggsave('./figures/moving_window/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
+
+################################################
+## for AIC
+out_prop_aic <- out_prop %>% 
+  select(id_covar:rank_aic)
+
+out_rank <- plyr::ddply(out_prop_aic, c("id_covar", "rank_aic"), \(x) {
+  n <- nrow(x)
+  pct <- round(n/length(unique(out_prop$iter_start))*100)
+  return(data.frame(pct = pct))
+})
+
+
+
+out_rank <- out_rank %>% 
+  group_by(rank_aic) %>% 
+  arrange(pct) %>% 
+  group_by(id_covar) %>% 
+  mutate(sum_aic = rev(sum(pct*rank_aic)))
+
+out_rank$rank_aic
+
+aic_rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum_aic), y = pct, fill = fct_rev(as.factor(rank_aic)))) +
+  geom_bar(stat = 'identity') +
+  scale_fill_manual(values = rank_pal) +
+  theme_bw() +
+  ylab('Percent of time') +
+  xlab('Covariate') +
+  labs(fill = 'Rank') +
+  theme(text=element_text(size=14),
+        axis.text.x = element_text(angle = 45, vjust = 0.55)) 
+
+aic_rank
+ggsave('./figures/moving_window/rank_aic_barplot.png', 
+       aic_rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
