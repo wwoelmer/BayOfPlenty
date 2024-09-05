@@ -47,7 +47,9 @@ tli <- ggplot(dat, aes(x = as.Date(date), y = tli_monthly)) +
   geom_point(size = 1.2) +
   geom_line(aes(x = as.Date(date), y = tli_annual), size = 2) +
   theme_bw()
-tli
+ggplotly(tli)
+
+mean(dat$tli_annual)
 
 dat %>% 
   distinct(year, tli_annual, .keep_all = TRUE) %>% 
@@ -143,6 +145,31 @@ r2_results <- ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)
   labs(color = 'Driver')
 r2_results
 
+out_mean <- out %>% 
+  group_by(iter_start) %>% 
+  summarize(mean_val = mean(r2, na.rm = TRUE),
+            date = unique(as.Date(start_date)),
+            sd_val = sd(r2, na.rm = TRUE),
+            n = n(),
+            t_score = qt((1 + 0.95) / 2, df = n - 1),
+            margin_error = t_score * (sd_val / sqrt(n))) %>%
+  mutate(lower_bound = mean_val - margin_error,
+         upper_bound = mean_val + margin_error)
+  
+
+ggplot(out_mean, aes(x = date, y = mean_val)) +
+  geom_line(data = out, aes(x = as.Date(start_date), y = r2, color = id_covar, alpha = 0.2)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower_bound, ymax = upper_bound), 
+              fill = 'blue', alpha = 0.5) +
+  theme_bw() +
+  theme(text=element_text(size=18)) +
+  xlab('Start date of iteration (+100 obs)') +
+  ylab(bquote(~R^2)) +
+  scale_color_manual(values = col_pal) +
+  labs(color = 'Driver')
+
+
 ggplotly(ggplot(out, aes(x = as.Date(start_date), y = r2, color = id_covar)) +
   geom_line() +
   geom_point(size = 2) +
@@ -168,7 +195,10 @@ out_prop <- out %>%
          rank = dense_rank(desc(r2)),
          r2_none = r2[id_covar=='none'],
          diff_from_none = r2 - r2_none,
-         rank_AR = dense_rank(desc(diff_from_none)))
+         rank_AR = dense_rank(desc(diff_from_none)),
+         aic_none = aic[id_covar=='none'],
+         diff_from_none_aic = aic - aic_none,
+         rank_aic = dense_rank(desc(diff_from_none_aic)))
 
 diff_r2 <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_best, color = id_covar)) +
   geom_point(size = 2) +
@@ -237,7 +267,7 @@ ggsave('./figures/moving_window/r2_diff_from_none.png', diff_none,
 out_prop <- out_prop %>% 
   select(id_covar:rank_AR)
 
-out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR"), \(x) {
+out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR", "rank_aic"), \(x) {
   n <- nrow(x)
   pct <- round(n/length(unique(out_prop$iter_start))*100)
   return(data.frame(pct = pct))
@@ -246,14 +276,15 @@ out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR"), \(x) {
 
 # define colors for the right number of ranks
 ## define color palettes for the right number of variables
-num_ranks <- length(unique(out_rank$rank))
+num_ranks <- length(unique(out_rank$rank_aic))
 rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
 
 out_rank <- out_rank %>% 
-  group_by(rank_AR) %>% 
+  group_by(rank_AR, rank_aic) %>% 
   arrange(pct) %>% 
   group_by(id_covar) %>% 
-  mutate(sum = sum(pct*rank_AR))
+  mutate(sum_r2 = sum(pct*rank_AR),
+         sum_aic = sum(pct*rank_aic))
 
 rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev(as.factor(rank_AR)))) +
   geom_bar(stat = 'identity') +
@@ -267,6 +298,15 @@ rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev
 rank
 ggsave('./figures/moving_window/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
 
+ggplot(out_rank, aes(x = reorder(id_covar, sum_aic, decreasing = TRUE), y = pct, fill = (as.factor(rank_aic)))) +
+  geom_bar(stat = 'identity') +
+  scale_fill_manual(values = rank_pal) +
+  theme_bw() +
+  ylab('Percent of time') +
+  xlab('Covariate') +
+  labs(fill = 'Rank') +
+  theme(text=element_text(size=14),
+        axis.text.x = element_text(angle = 45, vjust = 0.55)) 
 
 ################################################################################
 # look at parameter values
@@ -281,6 +321,21 @@ params <- out %>%
   ylab('Parameter Value') +
   labs(color = 'Covariate') +
   theme(text=element_text(size=15))
+
+out %>% 
+  filter(covar %in% test_vars) %>% 
+  ggplot(aes(y = value, x = id_covar, fill = id_covar)) +
+  geom_boxplot() +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_manual(values = col_pal) +
+  scale_fill_manual(values = col_pal) +
+  theme_bw() +
+  #facet_wrap(~id_covar, scales = 'free_y') +
+  xlab('Start of Iteration') +
+  ylab('Parameter Value') +
+  labs(color = 'Covariate') +
+  theme(text=element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1))
+
 
 ggplotly(params)
 ggsave('./figures/moving_window/parameter_time_series.png', params, dpi = 300, units = 'mm', 
