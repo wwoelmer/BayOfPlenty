@@ -12,8 +12,8 @@ run_ar <- function(data, id_var, id_covar, window_length = 99, lag_id = TRUE){
     #### look at acf and pacf to extract significant lags
     x <- data[,id_var]
     par(mfrow = c(1, 1))
-    #pacf(x, plot = TRUE)
-    #acf(x, plot = TRUE)
+    pacf(x, plot = TRUE)
+    acf(x, plot = TRUE)
     r <- pacf(x, plot = FALSE)$acf
     lag_save <- which(abs(r) >= qnorm(1 - 0.05 / 2) / sqrt(length(x))) 
     lag_save
