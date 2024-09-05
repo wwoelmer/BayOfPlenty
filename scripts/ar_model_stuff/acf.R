@@ -1,5 +1,5 @@
-install.packages('astsa')
-install.packages('forecast')
+#install.packages('astsa')
+#install.packages('forecast')
 library(forecast)
 library(astsa)
 library(tidyverse)
@@ -26,7 +26,7 @@ par(mfrow = c(1, 1))
 pacf(x, plot = TRUE)
 acf(x, plot = TRUE)
 r <- pacf(x, plot = FALSE)$acf
-lag_id <- which(abs(r)[-1] >= qnorm(1 - 0.05 / 2) / sqrt(length(x))) # this removes the first one
+lag_id <- which(abs(r) >= qnorm(1 - 0.05 / 2) / sqrt(nrow(x))) # this removes the first one
 lag_id
 # but what to do with so many lags? keep all of them?
 # then store the output of which() in a df for each lake, then reference df in ar_model.R to create lags
