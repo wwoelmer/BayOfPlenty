@@ -14,34 +14,22 @@ yr_to_hydro_yr <- function(data){ # data = dataframe with 'date' column in as.PO
 
 ##########################
 # use water quality data from Deniz, which goes back further in time
-wq <- read.csv("./data/processed_data/rotoehu_waterquality_2000_2021.csv")
-wq$date <- as.Date(wq$date)
-wq$site <- as.character(wq$site)
+wq1 <- read.csv("./data/processed_data/rotoehu_waterquality_2000_2021.csv")
+wq1$date <- as.Date(wq1$date)
+wq1$site <- as.character(wq1$site)
 
 # add in newest wq data
 wq2 <- read.csv('./data/processed_data/rotoehu_waterquality_2000_2024.csv') 
 wq2 <- wq2 %>% 
-  filter(date > max(wq$date)) %>% 
+  filter(date > max(wq1$date)) %>% 
   mutate(site = as.character(site),
          date = as.Date(date))
 
-wq <- full_join(wq, wq2)
+wq <- full_join(wq1, wq2)
 wq <- wq %>% 
   mutate(year = year(date),
          month = month(date)) 
 wq$category <- NA
-
-##################################################################
-# temp and thermal stratification metrics
-temp <- read.csv('./data/processed_data/90s_data/temp_metrics_rotoehu_90s.csv')
-temp <- temp %>% 
-  select(-X) %>% 
-  mutate(month = month(date)) 
-temp$date <- as.POSIXct(temp$date)
-temp <- yr_to_hydro_yr(temp)
-temp$month <- as.integer(temp$month)
-temp <- temp %>% select(-date, -hydroyear_label) %>% 
-  distinct(hydroyear, month, .keep_all = TRUE)
 
 ###########################
 # ctd data
@@ -94,40 +82,36 @@ df <- df %>%
 ###########################################################################################
 ######################################
 ### thermal mixing metrics
-mix <- read.csv('./data/processed_data/BoP_mix_index_2004_2019.csv')
+mix <- read.csv('./data/processed_data/BoP_mix_index_1990_2024.csv')
 mix <- mix %>% 
   filter(lake=='Rotoehu') %>% 
-  select(lake, site, date, everything()) %>% 
+  select(lake, date, everything()) %>% 
   mutate(year = year(date),
          month = month(date)) %>% 
-  distinct(lake, year, month, site, .keep_all = TRUE)
+  distinct(lake, year, month, .keep_all = TRUE)
 
 
-df <- left_join(df, mix, by = c('lake', 'year', 'month', 'site'))
+df <- left_join(df, mix, by = c('lake', 'year', 'month'))
 df <- df %>% 
   rename(date = date.x) %>% 
   select(-date.y)
 
 #####################################
 ### met data
-met <- read.csv('./data/processed_data/Rotoehu_met_summaries_1999_2021.csv')
+met <- read.csv('./data/processed_data/Rotoehu_met_summaries_1999_2023.csv')
 df <- left_join(df, met, by = c('month', 'year'))
 
 #####################################
 ## lake level
-lvl <- read_excel('./data/raw_data/EDS-686238-HL143688-Entire Record.xlsx', skip = 5)
+lvl <- read.csv('./data/processed_data/water_level_rotoehu.csv')
 lvl <- na.omit(lvl)
-colnames(lvl) <- c('date', 'end', 'avg_level_m')
 lvl$avg_level_m <- as.numeric(lvl$avg_level_m)
-lvl <- lvl %>% select(-end)
 lvl$date <- as.POSIXct(lvl$date)
-lvl <- yr_to_hydro_yr(lvl)
-lvl$month <- month(lvl$date)
-#lvl <- lvl %>% select(-date)
 
 lvl <- lvl %>% 
   group_by(hydroyear, month) %>% 
   mutate(monthly_avg_level_m = mean(avg_level_m, na.rm = TRUE))
+
 df$date <- as.Date(df$date)
 lvl$date <- as.Date(lvl$date)
 lvl <- lvl %>% 
@@ -137,8 +121,6 @@ lvl <- lvl %>%
 df <- left_join(df, lvl, by = 'date')
 
 ######################################
-## inflow data (discharge and loads)
-
 ## alum loading
 al <- read.csv('./data/processed_data/alum_dosing_rotoehu_2011_2022.csv')
 al$date <- as.Date(al$date)
