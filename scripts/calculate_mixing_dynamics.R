@@ -13,12 +13,12 @@ library(plotly)
 library(readxl)
 library(patchwork)
 
-ctd <- read.csv('./data/processed_data/BoP_ctd_2003_2022.csv')
+ctd <- read.csv('./data/processed_data/rotoehu_ctd_1990_2024.csv')
 ctd$date <- as.Date(ctd$date)
 
 # remove any dups
 ctd <- ctd %>% 
-  distinct(lake, site, date, depth_m, .keep_all = TRUE) %>% 
+  distinct(date, depth_m, .keep_all = TRUE) %>% 
   filter(!is.na(temp_C))
 
 
@@ -34,11 +34,7 @@ bthA <- bty$model_sd_m2
 bthD <- bty$depth_m
 
 # and wind
-met <- read.csv('./data/raw_data/rotoehu_era5_1999_2021.csv')
-met <- met %>% 
-  mutate(windspeed = sqrt(MET_wnduvu^2 + MET_wnduvv^2)) %>% 
-  select(Date, windspeed) %>% 
-  rename(date = Date)
+met <- read.csv('./data/processed_data/Rotoehu_met_1999_2023.csv')
 met$date <- as.Date(met$date)
 
 # merge wind into ctd dataframe
@@ -46,8 +42,8 @@ ctd <- left_join(ctd, met, by = 'date')
 
 # calculate a bunch of mixing metrics
 t_metrics <- ctd %>% 
-  select(lake, site, date, depth_m, temp_C, windspeed) %>% 
-  group_by(lake, site, date) %>% 
+  select(lake, date, depth_m, temp_C, windspeed) %>% 
+  group_by(lake, date) %>% 
   mutate(thermo_depth = thermo.depth(temp_C, depth_m, seasonal = TRUE),
          thermo_depth = ifelse(is.na(thermo_depth), 0, thermo_depth),
          schmidt_stability = schmidt.stability(temp_C, depth_m, bthA = bty$model_sd_m2, bthD = bty$depth_m),
@@ -61,17 +57,13 @@ t_metrics <- ctd %>%
          lake_num = lake.number(bthA = bthA, bthD = bthD, uStar = uStar, St = schmidt_stability,
                                 metaT = meta_top, metaB = meta_bot, averageHypoDense = hypo_dens),
          strat = ifelse(thermo_depth > 0, 1, 0)) %>% 
-  select(lake, site, date, everything()) %>% 
-  distinct(lake, site, date, .keep_all = TRUE)
+  select(lake, date, everything()) %>% 
+  distinct(lake, date, .keep_all = TRUE)
 
-# calculate the number of times the lake mixed each year
-t_metrics <- t_metrics %>% 
-  group_by(year, lake, site) %>% 
-  mutate()
 
 colnames(t_metrics)
 
-write.csv(t_metrics, './data/processed_data/BoP_mix_index_2004_2019.csv', row.names = FALSE)
+write.csv(t_metrics, './data/processed_data/BoP_mix_index_1990_2024.csv', row.names = FALSE)
 
 # only one day of data for Rotoma? remove
 t_metrics <- t_metrics %>% 
