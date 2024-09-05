@@ -99,6 +99,7 @@ for(i in 1:length(test_vars)){
     start <- j
     end <- j + window_length
     dat_sub <- dat_ar[start:end,]
+    dat_sub <- na.omit(dat_sub)
     opd <-  weighted_ordinal_pattern_distribution(x = dat_sub$tli_monthly, ndemb = 4)
     pe <- permutation_entropy(opd) 
     
@@ -267,7 +268,7 @@ ggsave('./figures/moving_window/r2_diff_from_none.png', diff_none,
 out_prop <- out_prop %>% 
   select(id_covar:rank_AR)
 
-out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR", "rank_aic"), \(x) {
+out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR", "rank"), \(x) {
   n <- nrow(x)
   pct <- round(n/length(unique(out_prop$iter_start))*100)
   return(data.frame(pct = pct))
@@ -276,17 +277,17 @@ out_rank <- plyr::ddply(out_prop, c("id_covar", "rank_AR", "rank_aic"), \(x) {
 
 # define colors for the right number of ranks
 ## define color palettes for the right number of variables
-num_ranks <- length(unique(out_rank$rank_aic))
+num_ranks <- length(unique(out_rank$rank))
 rank_pal <- colorRampPalette(brewer.pal(9, "YlGnBu"))(num_ranks)
 
 out_rank <- out_rank %>% 
-  group_by(rank_AR, rank_aic) %>% 
+  group_by(rank_AR, rank) %>% 
   arrange(pct) %>% 
   group_by(id_covar) %>% 
   mutate(sum_r2 = sum(pct*rank_AR),
-         sum_aic = sum(pct*rank_aic))
+         sum_aic = sum(pct*rank))
 
-rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev(as.factor(rank_AR)))) +
+rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum_aic), y = pct, fill = fct_rev(as.factor(rank_AR)))) +
   geom_bar(stat = 'identity') +
   scale_fill_manual(values = rank_pal) +
   theme_bw() +
@@ -298,7 +299,7 @@ rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum), y = pct, fill = fct_rev
 rank
 ggsave('./figures/moving_window/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
 
-ggplot(out_rank, aes(x = reorder(id_covar, sum_aic, decreasing = TRUE), y = pct, fill = (as.factor(rank_aic)))) +
+ggplot(out_rank, aes(x = reorder(id_covar, sum_aic, decreasing = TRUE), y = pct, fill = (as.factor(rank_AR)))) +
   geom_bar(stat = 'identity') +
   scale_fill_manual(values = rank_pal) +
   theme_bw() +
@@ -343,7 +344,7 @@ ggsave('./figures/moving_window/parameter_time_series.png', params, dpi = 300, u
 
 ## select a single driving covariate and compare across model parameters
 out %>% 
-  filter(id_covar=='air_temp_mean') %>% 
+  filter(id_covar=='mean air temp') %>% 
   ggplot(aes(x = as.Date(start_date), y = value, color = covar)) +
   geom_point() +
   facet_wrap(~covar, scales = 'free_y') +
