@@ -65,6 +65,25 @@ df <- df %>%
   select(lake, site, date, year, month, chla_ugL_INT, top_TN_ugL, top_TP_ugL,
          secchi_m, everything())
 
+##############################################################################################
+# get rid of 2024 data because we don't have met
+df <- df %>% 
+  filter(date < as.Date('2024-01-01'))
+
+###########################################################################################
+######################################
+### thermal mixing metrics
+mix <- read.csv('./data/processed_data/BoP_mix_index_1990_2024.csv')
+mix <- mix %>% 
+  select(lake, date, everything()) %>% 
+  mutate(year = year(date),
+         month = month(date)) %>% 
+  distinct(lake, year, month, .keep_all = TRUE) %>% 
+  select(-date)
+
+
+df <- left_join(df, mix, by = c('lake', 'year', 'month'))
+
 ###############################################################################################
 # interpolate missing data
 df <- df[order(df$date),]
@@ -77,24 +96,8 @@ df <- df %>%
          PAR_umolm2s_1 = na.approx(PAR_umolm2s_1, na.rm = FALSE, rule = 2, maxgap = 15),
          turbidity_ntu_1 = na.approx(turbidity_NTU_1, na.rm = FALSE, rule = 2, maxgap = 15),
          temp_C_1 = na.approx(temp_C_1, na.rm = FALSE, rule = 2, maxgap = 15),
-         temp_C_8 = na.approx(temp_C_8, na.rm = FALSE, rule = 2, maxgap = 15))
-
-###########################################################################################
-######################################
-### thermal mixing metrics
-mix <- read.csv('./data/processed_data/BoP_mix_index_1990_2024.csv')
-mix <- mix %>% 
-  filter(lake=='Rotoehu') %>% 
-  select(lake, date, everything()) %>% 
-  mutate(year = year(date),
-         month = month(date)) %>% 
-  distinct(lake, year, month, .keep_all = TRUE)
-
-
-df <- left_join(df, mix, by = c('lake', 'year', 'month'))
-df <- df %>% 
-  rename(date = date.x) %>% 
-  select(-date.y)
+         temp_C_8 = na.approx(temp_C_8, na.rm = FALSE, rule = 2, maxgap = 15),
+         schmidt_stability = na.approx(schmidt_stability, na.rm = FALSE, rule = 2, maxgap = 15))
 
 #####################################
 ### met data
@@ -156,7 +159,10 @@ ggplot(al_sum, aes(x = date, y  = sum_alum)) +
 df <- left_join(df, al_sum, by = 'date')
 # set NA's to zero as there was no dosing done on these dates
 df <- df %>% 
-  mutate(sum_alum = ifelse(date < min(al$date), 0, sum_alum))
+  mutate(sum_alum = ifelse(date < min(al$date), 0, sum_alum),
+         sum_alum = ifelse(date > max(al$date), 0, sum_alum))
+
+
 
 ggplot(df, aes(x = date, y  = sum_alum)) +
   geom_point(size = 2)
