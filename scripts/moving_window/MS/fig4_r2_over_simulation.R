@@ -1,4 +1,5 @@
 library(tidyverse)
+library(RColorBrewer)
 
 out <- read.csv('./data/processed_data/moving_window/model_output.csv')
 ################################################################################
@@ -40,8 +41,8 @@ all_with_signif <- ggplot(t, aes(x = as.Date(start_date), y = r2, group = id_cov
   ylab(bquote(~R^2)) +
   scale_color_manual(values = c('#6C5379', '#5FAD56')) +
   labs(color = 'Significant')
-
-ggsave('./figures/moving_window/MS/fig3_r2_with_signif.png', all_with_signif,
+all_with_signif
+ggsave('./figures/moving_window/MS/figS6_r2_with_signif.png', all_with_signif,
        dpi = 300, units = 'mm', height = 300, width = 600, scale = 0.4)
 
 out_mean <- out %>% 
