@@ -1,6 +1,7 @@
 # calculate model rank
 library(tidyverse)
 library(RColorBrewer)
+library(ggridges)
 
 out <- read.csv('./data/processed_data/moving_window/model_output.csv')
 ################################################################################
@@ -10,9 +11,11 @@ out$id_covar <- factor(out$id_covar,
                        levels = c("bottom_DRP_ugL", "bottom_NH4_ugL", "temp_C_8",
                                   "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
                                   "schmidt_stability", "sum_alum", "none"),
-                       labels = c("bottom DRP", "bottom NH4", "bottom water temp",
-                                  "mean air temp", "min windspeed", "monthly water level", 
-                                  "schmidt stability", "alum dosed", "none"))
+                       labels = c("Bottom DRP", "Bottom NH4", "Bottom Water Temp",
+                                  "Mean Air Temp", "Min Windspeed", "Water Level", 
+                                  "Schmidt Stability", "Alum Dosed", "None"))
+
+
 ################################################################################
 # calculate the difference across variables
 out_prop <- out %>% 
@@ -21,13 +24,12 @@ out_prop <- out %>%
   group_by(iter_start) %>% 
   mutate(diff_from_best = max(r2) - r2,
          rank = dense_rank(desc(r2)),
-         r2_none = r2[id_covar=='none'],
+         r2_none = r2[id_covar=='None'],
          diff_from_none = r2 - r2_none,
          rank_AR = dense_rank(desc(diff_from_none)),
-         aic_none = aic[id_covar=='none'],
+         aic_none = aic[id_covar=='None'],
          diff_from_none_aic = aic - aic_none,
-         rank_aic = dense_rank(desc(diff_from_none_aic*-1))) 
-                  #multiply by -1 to change the sign so positive is good for ranking purposes
+         rank_aic = dense_rank(desc(diff_from_none_aic*-1))) #multiply by -1 to change the sign so positive is good for ranking purposes
 
 
 ################################################################################
@@ -59,12 +61,45 @@ rank <- ggplot(out_rank, aes(x = reorder(id_covar, sum_r2), y = pct, fill = fct_
   scale_fill_manual(values = rank_pal) +
   theme_bw() +
   ylab('Percent of time') +
-  xlab('Covariate') +
+  xlab('Driver') +
   labs(fill = 'Rank') +
-  theme(text=element_text(size=14),
-        axis.text.x = element_text(angle = 45, vjust = 0.55)) 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.55)) 
 rank
-ggsave('./figures/moving_window/rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
+ggsave('./figures/moving_window/MS/fig6_rank_barplot.png', rank, dpi = 300, units = 'mm', height = 400, width = 600, scale = 0.3)
+
+col_no <- length(unique(out_rank$id_covar))
+col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
+
+ggplot(out_rank, aes(x = pct, fill = id_covar)) +
+  geom_density(alpha = 0.4) +
+  scale_fill_manual(values = col_pal)
+
+b <- ggplot(out_rank, aes(x = rank_AR, y = id_covar, fill = id_covar)) +
+  geom_boxplot() +
+  scale_fill_manual(values = col_pal) +
+  theme_bw() +
+  scale_x_continuous(breaks = (1:9),  # Specify breaks for y-axis
+                   labels = (1:9)) +
+  labs(fill = 'Driver') +
+  xlab('Rank') +
+  ylab("") +
+  theme(legend.position = 'none')
+
+
+c <- ggplot(out_rank, aes(x = rank_AR, y = id_covar, fill = id_covar)) +
+  geom_density_ridges() +
+  scale_fill_manual(values = col_pal) +
+  theme_bw() +
+  scale_x_continuous(breaks = (1:9),  # Specify breaks for y-axis
+                     labels = (1:9)) +
+  labs(fill = 'Driver') +
+  xlab('Rank') +
+  ylab("") +
+  theme(legend.position = 'none')
+
+
+ggarrange(rank, b, labels = 'auto', widths = c(0.6, 0.4))
+ggarrange(rank, c, labels = 'auto', widths = c(0.6, 0.4))
 
 ################################################
 ## for AIC
