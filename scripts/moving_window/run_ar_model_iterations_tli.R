@@ -99,7 +99,6 @@ for(i in 1:length(test_vars)){
     start <- j
     end <- j + window_length
     dat_sub <- dat_ar[start:end,]
-    dat_sub <- na.omit(dat_sub)
     opd <-  weighted_ordinal_pattern_distribution(x = dat_sub$tli_monthly, ndemb = 4)
     pe <- permutation_entropy(opd) 
     
