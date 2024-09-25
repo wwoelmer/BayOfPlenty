@@ -10,9 +10,9 @@ out$id_covar <- factor(out$id_covar,
                        levels = c("bottom_DRP_ugL", "bottom_NH4_ugL", "temp_C_8",
                                   "air_temp_mean", "windspeed_min", "monthly_avg_level_m",
                                   "schmidt_stability", "sum_alum", "none"),
-                       labels = c("bottom DRP", "bottom NH4", "bottom water temp",
-                                  "mean air temp", "min windspeed", "monthly water level", 
-                                  "schmidt stability", "alum dosed", "none"))
+                       labels = c("Bottom DRP", "Bottom NH4", "Bottom Water Temp",
+                                  "Mean Air Temp", "Min Windspeed", "Water Level", 
+                                  "Schmidt Stability", "Alum Dosed", "None"))
 col_no <- length(unique(out$id_covar))
 col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 ################################################################################
@@ -23,10 +23,10 @@ out_prop <- out %>%
   group_by(iter_start) %>% 
   mutate(diff_from_best = max(r2) - r2,
          rank = dense_rank(desc(r2)),
-         r2_none = r2[id_covar=='none'],
+         r2_none = r2[id_covar=='None'],
          diff_from_none = r2 - r2_none,
          rank_AR = dense_rank(desc(diff_from_none)),
-         aic_none = aic[id_covar=='none'],
+         aic_none = aic[id_covar=='None'],
          diff_from_none_aic = aic - aic_none,
          rank_aic = dense_rank(desc(diff_from_none_aic)),
          significant = p_value < 0.05)
@@ -60,7 +60,7 @@ delta_aic <- ggplot(out_prop, aes(x = as.Date(start_date), y = diff_from_none_ai
 delta_aic
 ggplotly(delta_aic)
 
-ggsave('./figures/moving_window/MS/fig4_delta_aic_significance.png', delta_aic,
+ggsave('./figures/moving_window/MS/fig5_delta_aic_significance.png', delta_aic,
        dpi = 300, units = 'mm', height = 300, width = 400, scale = 0.6)
 
 #######################################################################################
