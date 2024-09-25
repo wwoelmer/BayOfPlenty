@@ -70,12 +70,14 @@ ggsave('./figures/moving_window/MS/fig6_rank_barplot.png', rank, dpi = 300, unit
 col_no <- length(unique(out_rank$id_covar))
 col_pal <- colorRampPalette(brewer.pal(9, "Set1"))(col_no)
 
-ggplot(out_rank, aes(x = pct, fill = id_covar)) +
-  geom_density(alpha = 0.4) +
-  scale_fill_manual(values = col_pal)
+# calculate the median as a sorting value
+out_prop <- out_prop %>% 
+  group_by(id_covar) %>% 
+  mutate(median_rank = median(rank_AR))
 
-b <- ggplot(out_rank, aes(x = rank_AR, y = id_covar, fill = id_covar)) +
+b <- ggplot(out_prop, aes(x = rank_AR, y = reorder(id_covar, median_rank), fill = id_covar)) +
   geom_boxplot() +
+  geom_jitter(data = out_prop, aes(x = rank_AR, y = id_covar), alpha = 0.1) +
   scale_fill_manual(values = col_pal) +
   theme_bw() +
   scale_x_continuous(breaks = (1:9),  # Specify breaks for y-axis
@@ -84,10 +86,14 @@ b <- ggplot(out_rank, aes(x = rank_AR, y = id_covar, fill = id_covar)) +
   xlab('Rank') +
   ylab("") +
   theme(legend.position = 'none')
+b
 
 
-c <- ggplot(out_rank, aes(x = rank_AR, y = id_covar, fill = id_covar)) +
-  geom_density_ridges() +
+
+
+c <- ggplot(out_prop, aes(x = rank_AR, y = reorder(id_covar, median_rank), fill = id_covar)) +
+  geom_density_ridges(alpha = 0.8) +
+ # geom_jitter(data = out_prop, aes(x = rank_AR, y = id_covar), alpha = 0.2) +
   scale_fill_manual(values = col_pal) +
   theme_bw() +
   scale_x_continuous(breaks = (1:9),  # Specify breaks for y-axis
@@ -98,8 +104,12 @@ c <- ggplot(out_rank, aes(x = rank_AR, y = id_covar, fill = id_covar)) +
   theme(legend.position = 'none')
 
 
-ggarrange(rank, b, labels = 'auto', widths = c(0.6, 0.4))
-ggarrange(rank, c, labels = 'auto', widths = c(0.6, 0.4))
+p1 <- ggarrange(rank, b, labels = 'auto', widths = c(0.55, 0.45))
+ggsave('./figures/moving_window/MS/fig6_rank_barplot_with_boxplot.png', p1, 
+       dpi = 300, units = 'mm', height = 400, width = 700, scale = 0.3)
+p2 <- ggarrange(rank, c, labels = 'auto', widths = c(0.6, 0.4))
+ggsave('./figures/moving_window/MS/fig6_rank_barplot_with_densityplot.png', p2, 
+       dpi = 300, units = 'mm', height = 400, width = 700, scale = 0.3)
 
 ################################################
 ## for AIC
