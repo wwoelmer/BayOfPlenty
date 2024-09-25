@@ -102,6 +102,11 @@ dat_hist <- dat_hist %>%
 
 
 wq_all <- full_join(wq_wide, dat_hist)
+
+wq_all <- wq_all %>% 
+  arrange(date)
+write.csv(wq_all, './data/processed_data/rotoehu_wq_data_1990_2024.csv', row.names= FALSE)  
+
 wq_all_long <- wq_all %>% 
   pivot_longer(DIN_mgm3:secchi_m, names_to = 'variable')
 
