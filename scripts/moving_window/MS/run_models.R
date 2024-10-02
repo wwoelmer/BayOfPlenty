@@ -122,38 +122,7 @@ write.csv(out, './data/processed_data/moving_window/model_output.csv', row.names
 
 
 
-################################################################################
-# look at parameter values
-params <- out %>% 
-  filter(covar %in% test_vars) %>% 
-  ggplot(aes(x = as.Date(start_date), y = value, color = id_covar)) +
-  geom_point() +
-  scale_color_manual(values = col_pal) +
-  facet_wrap(~id_covar, scales = 'free_y') +
-  theme_bw() +
-  xlab('Start of Iteration') +
-  ylab('Parameter Value') +
-  labs(color = 'Covariate') +
-  theme(text=element_text(size=15))
 
-out %>% 
-  filter(covar %in% test_vars) %>% 
-  ggplot(aes(y = value, x = id_covar, fill = id_covar)) +
-  geom_boxplot() +
-  geom_hline(aes(yintercept = 0)) +
-  scale_color_manual(values = col_pal) +
-  scale_fill_manual(values = col_pal) +
-  theme_bw() +
-  #facet_wrap(~id_covar, scales = 'free_y') +
-  xlab('Start of Iteration') +
-  ylab('Parameter Value') +
-  labs(color = 'Covariate') +
-  theme(text=element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-ggplotly(params)
-ggsave('./figures/moving_window/parameter_time_series.png', params, dpi = 300, units = 'mm', 
-       height = 300, width = 550, scale = 0.4)
 
 ## select a single driving covariate and compare across model parameters
 out %>% 
