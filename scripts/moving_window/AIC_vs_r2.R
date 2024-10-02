@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(ggplot2)
+library(ggpubr)
 
 out <- read.csv('./data/processed_data/moving_window/model_output.csv')
 
@@ -55,7 +56,7 @@ aic_r2_compare <- ggplot(out, aes(x = aic, y = r2, color = id_covar)) +
 
 combined_fig <- ggarrange(aicc, aic_r2_compare, common.legend = TRUE, labels = 'AUTO')
 combined_fig
-ggsave('./figures/moving_window/aic_r2_comparison.png', combined_fig,
+ggsave('./figures/moving_window/MS/SI_figs/aic_r2_comparison.png', combined_fig,
        dpi = 300, units = 'mm', height = 300, width = 700, scale = 0.5)
 
 
