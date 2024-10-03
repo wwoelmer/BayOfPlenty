@@ -31,6 +31,24 @@ buoy_daily <- buoy %>%
             chl_RFU = mean(FlChlr, na.rm = TRUE))
   
 buoy_daily <- na.omit(buoy_daily)  
+
+buoy_daily %>% 
+  mutate(doy = yday(date),
+         year = year(date)) %>% 
+  rename(depth_m = depth_rnd) %>% 
+  ggplot(aes(x = doy, y = DO_mgL, color = depth_m)) +
+  geom_point() +
+  facet_wrap(~year) +
+  theme_bw()
+
+buoy_daily %>% 
+  mutate(doy = yday(date),
+         year = year(date)) %>% 
+  rename(depth_m = depth_rnd) %>% 
+  ggplot(aes(x = doy, y = chl_RFU, color = depth_m)) +
+  geom_point() +
+  facet_wrap(~year) +
+  theme_bw()
   
 mix <- buoy_daily %>%   
   summarise(thermo_depth = thermo.depth(temp_C, depth_rnd, seasonal = TRUE),
@@ -39,15 +57,29 @@ mix <- buoy_daily %>%
 
 colnames(mix) <- c("date", "thermo_depth", "schmidt_stability")
 
-ggplot(mix, aes(x = as.Date(date), y = thermo_depth)) +
+mix %>% 
+  mutate(doy = yday(date),
+         year = year(date)) %>% 
+  ggplot(aes(x = doy, y = thermo_depth, color = as.factor(year))) +
   geom_point() +
   geom_line() +
-  theme_bw()
+  theme_bw() +
+  facet_wrap(~year)
+
+mix %>% 
+  mutate(doy = yday(date),
+         year = year(date)) %>% 
+  ggplot(aes(x = doy, y = schmidt_stability, color = as.factor(year))) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(~year)
 
 ggplot(mix, aes(x = as.Date(date), y = schmidt_stability)) +
   geom_point() +
   geom_line() +
-  theme_bw()
+  theme_bw() +
+  xlab('Date')
 
 mix <- mix %>% 
   mutate(year = year(date),
@@ -57,13 +89,16 @@ ggplot(mix, aes(x = month, y = schmidt_stability, fill =  as.factor(month))) +
   geom_boxplot() +
   theme_bw()
 
-ggplot(mix, aes(x = year, y = schmidt_stability, fill =  as.character(year))) +
+ggplot(mix, aes(x = as.factor(year), y = schmidt_stability, fill =  as.character(year))) +
   geom_boxplot() +
   theme_bw()
 
 ggplot(mix, aes(x = as.factor(month), y = schmidt_stability, fill =  as.factor(year))) +
   geom_boxplot(position = position_dodge(0.8)) +
-  theme_bw()
+  theme_bw() +
+  labs(fill = 'Year') +
+  xlab('Month') +
+  ylab('Schmidt stability')
 
 ggplot(mix, aes(x = as.factor(month), y = schmidt_stability, fill =  as.factor(year))) +
   geom_boxplot(position = position_dodge(0.8)) +
@@ -99,3 +134,51 @@ chl <- ggplot(buoy_daily, aes(x = as.Date(date), y = chl_RFU, color = depth_rnd)
   ylab('Chl (RFU)')
 
 ggarrange(do, chl, ncol = 1)
+
+buoy_daily %>% 
+  mutate(month = month(date),
+         year = year(date)) %>% 
+  ggplot(aes(x = as.factor(month), y = chl_RFU, fill =  as.factor(year))) +
+  geom_boxplot(position = position_dodge(0.8)) +
+  theme_bw() +
+  labs(fill = 'Year') +
+  xlab('Month') 
+
+######################################################################################################
+# calculate volumetrically weighted DO
+
+
+hypo_o2 <- buoy_daily %>% 
+  select(date, depth_rnd, temp_C, DO_mgL) %>% 
+  rename(depth_m = depth_rnd) %>% 
+  distinct(date, depth_m, .keep_all = TRUE) %>% 
+  group_by(date) %>% 
+  mutate(hypo_depth = meta.depths(temp_C, depth_m, seasonal = FALSE, mixed.cutoff = 0)[2]) %>% 
+  group_by(date) %>% 
+  filter(depth_m > hypo_depth) %>% 
+  left_join(bty_interp, by = 'depth_m') %>% 
+  mutate(DO_vol = DO_mgL*vol_at_contour_m3)
+
+hypo_VW <- hypo_o2 %>% 
+  group_by(date) %>% 
+  summarise(DO_sum = sum(DO_vol)) %>% 
+  mutate(doy = yday(date),
+         year = year(date))
+
+
+ggplot(hypo_VW, aes(x = as.Date(date), y = DO_sum)) +
+  geom_point() +
+  geom_line() +
+  geom_smooth()
+
+ggplot(hypo_VW, aes(x = doy, y = DO_sum, color = as.factor(year))) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~year)
+
+ggplot(hypo_VW, aes(x = as.factor(year), y = DO_sum, fill = as.factor(year))) +
+  geom_boxplot() +
+  theme_bw() +
+  ylab('Hypolimnetic DO') +
+  xlab('Year') +
+  theme(legend.position = 'none')
