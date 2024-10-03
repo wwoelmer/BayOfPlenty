@@ -31,6 +31,62 @@ wq <- wq %>%
          month = month(date)) 
 wq$category <- NA
 
+# add in data from 1990's
+wq90 <- read_excel('./data/raw_data/Rotoehu_1990_1999_PaulScholes.xlsx')
+
+# categorize depths
+wq90 <- wq90 %>% 
+  mutate(depthcat = ifelse(DepthFrom > 5, 'bottom', 'top'),
+         depthcat = ifelse(Unit=='SecchiDepth (m)', '', depthcat),
+         depthcat = ifelse(Unit=='Chla (mg/m3)', 'INT', depthcat))
+
+# for days when more than one TN or TP sample was taken above 3 m, take the average
+wq90 <- wq90 %>% 
+  select(-DepthFrom) %>% 
+  group_by(Date, Unit, depthcat) %>% 
+  summarise(Results = mean(Results), n = n()) %>% 
+  mutate(Results = round(Results, digits = 2))
+
+# make wide and rename variables
+wq90 <- wq90 %>% 
+  ungroup() %>% 
+  select(-n) %>% 
+  mutate(variable_depth = paste0(Unit, "_", depthcat)) %>% 
+  select(-Unit, -depthcat) %>% 
+  pivot_wider(names_from = variable_depth, values_from = Results) %>% 
+  rename(chla_ugL_INT = `Chla (mg/m3)_INT`,
+         bottom_DRP_ugL = "DRP (mg/m3)_bottom",
+         top_DRP_ugL = "DRP (mg/m3)_top",
+         bottom_NH4_ugL = "NH4-N (mg/m3)_bottom",
+         top_NH4_ugL = "NH4-N (mg/m3)_top",
+         bottom_NO3_ugL = "NNN (mg/m3)_bottom",
+         top_NO3_ugL = "NNN (mg/m3)_top",
+         secchi_m = `SecchiDepth (m)_`,
+         bottom_TN_ugL = "TN (mg/m3)_bottom",
+         top_TN_ugL = "TN (mg/m3)_top",
+         bottom_TP_ugL = "TP (mg/m3)_bottom",
+         top_TP_ugL = "TP (mg/m3)_top",
+         bottom_pH = pH_bottom,
+         top_pH = pH_top,
+         date = Date)# edit to fit same format as other wq data
+
+
+wq90 <- wq90 %>% 
+  mutate(lake = 'Rotoehu',
+         site = '3') 
+
+wq <- full_join(wq, wq90) 
+wq <- wq %>% 
+  arrange(date)
+
+wq_grant <- wq %>% 
+  select(-c(top_turbidity_NTU:pH_top, bottom_pH, top_pH)) %>% 
+  distinct(date, .keep_all = TRUE)
+ggplot(wq_grant, aes(x = date, y = bottom_DRP_ugL)) +
+  geom_point() +
+  theme_bw()
+
+write.csv(wq_grant, './data/processed_data/rotoehu_wq_data_1990_2024.csv')
 ###########################
 # ctd data
 ctd <- read.csv('./data/processed_data/rotoehu_ctd_1990_2024.csv')
