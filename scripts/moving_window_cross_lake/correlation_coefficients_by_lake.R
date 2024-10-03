@@ -22,7 +22,10 @@ for(i in 1:length(lakes)){
     filter(lake==lakes[i]) %>% 
     select(-date, -lake, -note, -tli_annual, -sum_alum, -month, -year, -strat,
            -secchi_m, -TN_mgm3_top, -TP_mgm3_top, -chla_mgm3_top,
-           -temp_C_bottom, -temp_C_top, -epi_dens,-hypo_dens) %>% 
+           -temp_C_bottom, -temp_C_top, -epi_dens,-hypo_dens,
+           -air_temp_min, -windspeed_min, -air_temp_mean,
+           -windspeed_mean, -air_temp_max, -windspeed_max,
+           -rain_sum, -water_level, -uStar, -lake_num) %>% 
     select(tli_monthly, everything())
   
   cor_df <- na.omit(cor_df)
@@ -54,7 +57,7 @@ out <- out %>%
   select(lake, everything(), -tli_monthly)
 
 out_long <- out %>% 
-  pivot_longer(DRP_mgm3_bottom:lake_num, names_to = 'variable', values_to = 'value') 
+  pivot_longer(DRP_mgm3_bottom:Kd, names_to = 'variable', values_to = 'value') 
 
 out_long <- na.omit(out_long)
 
